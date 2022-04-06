@@ -1,0 +1,8 @@
+[package]
+name = "limpa_downloads"
+version = "0.2.1"
+edition = "2021"
+
+[dependencies]
+utilitarios = { path = "external_lib/utilitarios", version = "0.4.2" }
+pancurses = { path = "external_lib/pancurses", version = "0.16.1" }
