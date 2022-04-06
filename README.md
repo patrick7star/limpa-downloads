@@ -1,0 +1,2 @@
+# limpa_downloads
+O gerenciador do diretório downloads em sistemas Linux. Ele verifica o tempo que arquivos e pastas ali dentro estão sem qualquer movimento, assim com o tipo do arquivo e tal. Depois de tal análise faz a exclusão de tais arquivos para economizar disco e deixar tal diretório limpo para novos downloads. A análise é muito organizada, não é qualquer `Item` recém movido para lá que é automaticamente deletado, trabalha com muitos "metadados" do arquivo para, aí sim, declará a exclusão em algum período posterior.
