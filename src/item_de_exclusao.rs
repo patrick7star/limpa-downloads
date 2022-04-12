@@ -1,9 +1,9 @@
 
 // biblioteca padrão do Rust:
-use std::path::{PathBuf};
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, Duration};
 use std::ops::Drop;
-use std::fs::{remove_file, read_dir};
+use std::fs::{remove_dir, remove_file, read_dir};
 use std::fmt::{
    Display, Formatter, 
    Result as Formato
@@ -14,6 +14,7 @@ use std::string::String;
 extern crate utilitarios;
 use utilitarios::barra_de_progresso::temporizador_progresso;
 use utilitarios::terminal_dimensao::{TD, terminal_largura};
+use super::letreiro::Letreiro;
 
 
 /* reescrevendo o método do len da string para 
@@ -62,16 +63,18 @@ impl StringExtensao for String {
 
 /** elememento com dados e, principalmente 
  dada de exclusão.  */
-#[derive(Clone)]
+//#[derive(Clone)]
 pub struct Item {
    // caminho para o item.
    pub caminho: PathBuf,
    // nome do item em sí.
    pub nome: String,
    // tempo restantes de vida(na fila de exclusão).
-   validade: Duration,
+   pub validade: Duration,
    // o último acesso do itém.
-   ultimo_acesso: SystemTime
+   pub ultimo_acesso: SystemTime,
+   // letreiro dinâmico, muito para o modo gráfico.
+   pub letreiro: Letreiro
 }
 
 impl Item {
@@ -87,12 +90,18 @@ impl Item {
          .unwrap()
          .to_string()
       };
+      // letreiro com letras(do nome) em movimento.
+      let letreiro:Letreiro = Letreiro::novo(nome.as_str()).unwrap();
       // cria tal objeto.
-      Item { caminho, nome, validade, ultimo_acesso }
+      Item { caminho, nome, validade, ultimo_acesso, letreiro}
    }
 
    // verifica se o item já expirou.
    pub fn expirado(&mut self) -> bool {
+      /* movimenta letreiro aqui, pois será 
+       * chamado bem frequentemente neste bloco. */
+      self.letreiro.movimenta_letreiro();
+
       /* se o último acesso ter excedido a validade
        * dada, então dá o itém com expirado. */
       let acesso = self.ultimo_acesso.elapsed().unwrap();
@@ -134,11 +143,16 @@ impl Drop for Item {
        * validade" realmente acabou! */
       if self.expirado() {
          let caminho = self.caminho.as_path();
-         match remove_file(caminho) {
-            Ok(_) => (),
-            Err(_) => 
-               { panic!("[ERRO!!!] o arquivo ainda continua!"); } 
-         };
+         if caminho.is_file() {
+            match remove_file(caminho) {
+               Ok(_) => (),
+               Err(_) => 
+                  { panic!("[ERRO!!!] o arquivo ainda continua!"); } 
+            };
+         }
+         // caso específico para pastas vázias:
+         else if caminho.is_dir() 
+            { remove_dir(caminho).unwrap(); }
       }
    }
 }
@@ -251,7 +265,29 @@ impl FilaExclusao {
             .path()
             .is_dir()
          };
-         if e_um_diretorio { continue; }
+         // no caso de se é um diretório.
+         if e_um_diretorio { 
+            // trabalhando por enquanto apenas com pastas vázias.
+            if diretorio_vazio(entrada.path().as_path()) {
+               let validade:Duration;
+               const ALGUNS_MINUTOS:u64 = (13.9 * 60.0) as u64;
+               validade = Duration::from_secs(ALGUNS_MINUTOS);
+               // criando o ítem e adicionando na lista.
+               let item = Item::cria(
+                  entrada
+                  .path(),
+                  entrada
+                  .metadata()
+                  .unwrap()
+                  .accessed()
+                  .unwrap(),
+                  validade
+               );
+               lista.push(item);
+            }
+            // próximo ítem do laço ...
+            continue;
+         }
          
          // a extensão do arquivo.
          let aux_path = entrada.path();
@@ -278,7 +314,8 @@ impl FilaExclusao {
          } else if extensao == "torrent" {
             const ALGUNS_MINUTOS:u64 = (45.2 * 60.0) as u64;
             validade = Duration::from_secs(ALGUNS_MINUTOS);
-         } else if extensao == "dat" || extensao == "djvu" {
+         } else if extensao == "dat" || extensao == "djvu" ||
+         extensao == "toml" {
             const ALGUNS_MINUTOS:u64 = (7.2 * 60.0) as u64;
             validade = Duration::from_secs(ALGUNS_MINUTOS);
          } else if extensao == "epub" {
@@ -313,13 +350,23 @@ impl FilaExclusao {
    }
 }
 
+// verifica se o diretório passado está vázio.
+fn diretorio_vazio(caminho:&Path) -> bool {
+   /* tenta percorrer, se conseguir no 
+    * mínimo um não está vázio. */
+   for _ in read_dir(caminho).unwrap() 
+      { return false; }
+   // se chega até aqui, então está vázio.
+   return true;
+}
+
 
 #[cfg(test)]
 mod tests {
    use super::*;
    use std::thread;
    use std::path::Path;
-   use std::fs::write;
+   use std::fs::{self,write};
 
    #[test]
    fn testa_struct_item() {
@@ -512,5 +559,21 @@ mod tests {
          thread::sleep(Duration::from_secs(1));
       }
       assert!(true);
+   }
+
+   #[test]
+   fn testa_diretorio_vazio() {
+      // criando diretório/e arquivo para testes ...
+      let caminho = Path::new("data_teste/pasta_vazia_teste/");
+      fs::create_dir_all(caminho).unwrap();   
+      assert!(diretorio_vazio(caminho));
+      let arq_caminho = caminho.join("arquivo_teste.txt");
+      fs::write(
+         arq_caminho.as_path(), 
+         b"nenhum dado relevante!"
+      ).unwrap();
+      assert!(!diretorio_vazio(caminho));
+      // removendo o diretório e arquivos criados ...
+      fs::remove_dir_all(caminho).unwrap();
    }
 }

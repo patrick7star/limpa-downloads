@@ -22,6 +22,7 @@ use utilitarios::impressao::circunscrever;
 
 // minha biblioteca:
 use crate::item_de_exclusao::{Item, FilaExclusao};
+use super::letreiro::StringDinamica;
 
 // biblioteca padrão do Rust:
 use std::time::Duration;
@@ -34,6 +35,7 @@ static MEDIO:i16 = 97;
 static LI_COR:i16 = 96;
 static LEH_COR:i16 = 95;
 
+
 pub trait Grafico {
    /** o mesmo que o método original, porém 
     de forma dinâmica; com coloração e etc.  */
@@ -45,6 +47,7 @@ pub trait DropGrafico {
     com dinâmica de saída no 'ncurses' */
    fn drop(&mut self, janela:&Window);
 }
+
 
 /* string específica do `Item` e extrai sua
  * porcentagem, que fica geralmente no final.
@@ -68,7 +71,8 @@ fn item_visualizacao(janela:&Window, item:&Item) {
    // próxima linha ...
    let l = janela.get_cur_y() + 1;
    janela.mv(l, 0);
-   let item_str = &item.to_string();
+   //let item_str = &item.to_string();
+   let item_str: &String = &StringDinamica::to_string(item.clone());
    let i = item_str.find("[").unwrap();
    let f = item_str.find("]").unwrap();
    janela.addnstr(item_str, i+1); 
@@ -97,10 +101,9 @@ fn cabecalho<'a>(string:&'a str, janela:&Window, cor:i16) {
    // largura total do terminal.
    let largura = janela.get_max_x();
    // espaços em branco da borda esquerda.
-   let coluna = (largura - tamanho) / 2 - 1 - 3;
+   let coluna = (largura - tamanho) / 2 - (1 + 3);
    // movendo cursor ...
-   janela.mv(janela.get_cur_y() + 2, 0);
-   let linha = janela.get_cur_y()+1;
+   let linha = janela.get_cur_y() + 3;
    // desenhado na tela ...
    janela.attrset(A_UNDERLINE);
    janela.color_set(cor);
@@ -110,10 +113,9 @@ fn cabecalho<'a>(string:&'a str, janela:&Window, cor:i16) {
    );
    janela.color_set(0);
    janela.attrset(A_NORMAL);
-   // movendo cursor ...
-   janela.mv(janela.get_cur_y()+1, 0);
+   // movendo cursor uma linha abaixo ...
+   janela.mv(janela.get_cur_y() + 1, 0);
 }
-
 
 fn escreve_listas(janela:&Window, todos:&mut Vec<Item>,
 proximas_exclusao:&mut Vec<Item>) {
