@@ -49,9 +49,11 @@ impl Letreiro {
       *rolo = rolo.replace("á", "a");
       *rolo = rolo.replace("â", "a");
       *rolo = rolo.replace("ã", "a");
+      *rolo = rolo.replace("à", "a");
       *rolo = rolo.replace("ú", "u");
       *rolo = rolo.replace("í", "i");
       *rolo = rolo.replace("ô", "o");
+      *rolo = rolo.replace("ó", "o");
       *rolo = rolo.replace("ç", "c");
    }
    fn cria_rolo(rotulo:&str) -> String {
@@ -140,11 +142,13 @@ impl Display for Letreiro {
    fn fmt(&self, f:&mut Formatter<'_>) -> Formato {
       // apelidos para melhorar a legiblidade.
       let intervalo = self.intervalo.as_ref().unwrap();
-      let tamanho_str = self.rotulo.len() as u8;
+      let mut rotulo = self.rotulo.clone();
+      Letreiro::remove_acentuacao(&mut rotulo);
+      let tamanho_str = rotulo.len() as u8;
 
       // vendo se a string pode ser contraída ...
       if tamanho_str < self.capacidade
-         { write!(f, "{}", self.rotulo)  }
+         { write!(f, "{}", rotulo)  }
       else {
          let retangulo = {
             self.rolo
@@ -159,10 +163,14 @@ impl Display for Letreiro {
 // impressão sobre o status do ítem.
 impl StringDinamica for Item {
    fn to_string(&self) -> String {
+      let duracao = match self.ultimo_acesso.elapsed() {
+         Ok(ultimo_acesso) => ultimo_acesso,
+         Err(estimativa) => estimativa.duration()
+      };
       let barra_de_progresso:String = {
          temporizador_progresso(
             self.letreiro.to_string().as_str(),
-            self.ultimo_acesso.elapsed().unwrap(),
+            duracao,
             self.validade
          )
       };

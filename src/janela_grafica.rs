@@ -73,8 +73,8 @@ fn item_visualizacao(janela:&Window, item:&Item) {
    janela.mv(l, 0);
    //let item_str = &item.to_string();
    let item_str: &String = &StringDinamica::to_string(item.clone());
-   let i = item_str.find("[").unwrap();
-   let f = item_str.find("]").unwrap();
+   let i = item_str.rfind("[").unwrap();
+   let f = item_str.rfind("]").unwrap();
    janela.addnstr(item_str, i+1); 
    janela.attrset(A_BOLD);
    let percentual = extrai_percentual(item_str.as_str());
@@ -328,29 +328,36 @@ impl DropGrafico for Item {
 #[cfg(test)]
 mod tests {
    use super::*;
-   use std::fs::write;
-   use std::path::{Path, PathBuf};
+   use std::fs::{create_dir, write};
    use std::time::SystemTime;
+   use std::env::temp_dir;
 
    #[test]
    fn testa_extrai_percentual() {
       // criando arquivos aleatórios.
-      write("fonte.ttf",b"nada").unwrap();
-      write("teste.dat", b"nada").unwrap();
+      let caminho = temp_dir().as_path().join("data_teste");
+      // criando diretório primeiramente ...
+      create_dir(caminho.as_path()).unwrap();
+      write(caminho.as_path().join("fonte.ttf"),b"nada").unwrap();
+      write(caminho.as_path().join("teste.dat"), b"nada").unwrap();
 
-      let caminho = Path::new("teste.dat");
       let i = Item::cria(
-         caminho.to_path_buf(),
+         caminho.as_path()
+         .join("teste.dat")
+         .to_path_buf(),
          SystemTime::now(),
          Duration::from_secs(15)
       );
-      let i2 = Item::cria(
-         Path::new("fonte.ttf").to_path_buf(),
+      let _i2 = Item::cria(
+         caminho.as_path()
+         .join("fonte.ttf.dat")
+         .to_path_buf(),
          SystemTime::now(),
          Duration::from_secs(15)
       );
 
-      let p = dbg!(extrai_percentual(i.to_string().as_str()));
+      let progresso = StringDinamica::to_string(&i);
+      let p = dbg!(extrai_percentual(progresso.as_str()));
       assert!(p >= 95.5 && p <= 100.0);
    }
 }

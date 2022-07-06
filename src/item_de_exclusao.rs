@@ -16,6 +16,8 @@ use utilitarios::barra_de_progresso::temporizador_progresso;
 use utilitarios::terminal_dimensao::{TD, terminal_largura};
 use super::letreiro::Letreiro;
 
+// próprio módulo.
+mod remocao_dir;
 
 /* reescrevendo o método do len da string para 
  * pegar acentuações conhecidas de dois bytes.
@@ -104,18 +106,31 @@ impl Item {
 
       /* se o último acesso ter excedido a validade
        * dada, então dá o itém com expirado. */
-      let acesso = self.ultimo_acesso.elapsed().unwrap();
-      if self.validade < acesso  
-         { return true; }
-      else
-         { return false; }
+      match self.ultimo_acesso.elapsed() {
+      //let acesso = self.ultimo_acesso.elapsed().unwrap();
+         Ok(acesso) => {
+            if self.validade < acesso  { true }
+            else { false }
+         } Err(estimativa) => {
+            let acesso = estimativa.duration();
+            if self.validade < acesso  
+               { true }
+            else { false }
+         }
+      }
    }
 
    // tempo restante da validade.
    pub fn tempo_restante(&mut self) -> Duration { 
       if !self.expirado() { 
-         let acesso = self.ultimo_acesso.elapsed().unwrap();
-         return self.validade - acesso;
+         match self.ultimo_acesso.elapsed() {
+            Ok(acesso) => 
+               { return self.validade - acesso; }
+            Err(estimativa) => { 
+               let acesso = estimativa.duration();
+               return self.validade - acesso;
+            }
+         }
       }
       else { Duration::from_secs(0) }
    }
@@ -124,10 +139,14 @@ impl Item {
 // impressão sobre o status do ítem.
 impl Display for Item {
    fn fmt(&self, formatador:&mut Formatter<'_>) -> Formato {
+      let duracao = match self.ultimo_acesso.elapsed() {
+         Ok(ultimo_acesso) => ultimo_acesso,
+         Err(estimativa) => estimativa.duration()
+      };
       let barra_de_progresso:String = {
          temporizador_progresso(
             self.nome.as_str(),
-            self.ultimo_acesso.elapsed().unwrap(),
+            duracao,
             self.validade
          )
       };
@@ -151,8 +170,13 @@ impl Drop for Item {
             };
          }
          // caso específico para pastas vázias:
-         else if caminho.is_dir() 
+         else if caminho.is_dir() && diretorio_vazio(caminho)
             { remove_dir(caminho).unwrap(); }
+         /* diretório com conteúdo(pastas e arquivos, 
+          * e também subdiretórios com mais arquivos
+          * e pastas). */
+         else 
+            { remocao_dir::remocao_completa(caminho); }
       }
    }
 }
@@ -177,7 +201,7 @@ pub struct FilaExclusao {
 
 impl FilaExclusao {
    // constante contendo raíz do diretório análisado.
-   const RAIZ:&'static str = concat!(env!("HOME"), "/", "Downloads");
+   const RAIZ:&'static str = concat!(env!("HOME"), "/Downloads");
 
    /// verifica se não há mais nada analisar e deletar.
    pub fn vazia(&self) -> bool { 
@@ -260,32 +284,27 @@ impl FilaExclusao {
       for entry in read_dir(FilaExclusao::RAIZ).unwrap() {
          let entrada = entry.unwrap();
          // se for um diretório ignorar ...
-         let e_um_diretorio:bool = {
-            entrada
-            .path()
-            .is_dir()
-         };
+         let e_um_diretorio:bool = entrada.path().is_dir();
+
          // no caso de se é um diretório.
          if e_um_diretorio { 
-            // trabalhando por enquanto apenas com pastas vázias.
-            if diretorio_vazio(entrada.path().as_path()) {
-               let validade:Duration;
-               const ALGUNS_MINUTOS:u64 = (13.9 * 60.0) as u64;
-               validade = Duration::from_secs(ALGUNS_MINUTOS);
-               // criando o ítem e adicionando na lista.
-               let item = Item::cria(
-                  entrada
-                  .path(),
-                  entrada
-                  .metadata()
-                  .unwrap()
-                  .accessed()
-                  .unwrap(),
-                  validade
-               );
-               lista.push(item);
-            }
-            // próximo ítem do laço ...
+            let validade:Duration;
+            let item: Item;
+            const ALGUNS_DIAS:u64 = (24.0*3600.0*13.9) as u64;
+            let caminho = entrada.path();
+            let auxiliar = SystemTime::now();
+            let ua_medio = remocao_dir::acesso_medio_dir(caminho.as_path());
+            let tempo = Duration::from_secs_f32(ua_medio);
+            let ua = {
+               auxiliar
+               .checked_add(tempo)
+               .expect("falha no ST do caminho passado!")
+            };
+
+            // criando o ítem e adicionando na lista.
+            validade = Duration::from_secs(ALGUNS_DIAS);
+            item = Item::cria(caminho, ua, validade);
+            lista.push(item);
             continue;
          }
          
@@ -293,7 +312,7 @@ impl FilaExclusao {
          let aux_path = entrada.path();
          let extensao:&str = {
             match aux_path.as_path().extension() {
-               Some(string) => string.to_str().unwrap(),
+               Some(s) => s.to_str().unwrap(),
                None => { continue; },
             }
          };
@@ -330,16 +349,15 @@ impl FilaExclusao {
          }
          
          // criando o ítem e adicionando na lista.
-         let item = Item::cria(
-            entrada
-            .path(),
+         let ua = {
             entrada
             .metadata()
             .unwrap()
             .accessed()
-            .unwrap(),
-            validade
-         );
+            .unwrap()
+         };
+         let item: Item;
+         item = Item::cria(entrada.path(), ua, validade);
          lista.push(item)
       }
       // criando instância em sí, já retornando ...
@@ -365,8 +383,13 @@ fn diretorio_vazio(caminho:&Path) -> bool {
 mod tests {
    use super::*;
    use std::thread;
-   use std::path::Path;
-   use std::fs::{self,write};
+   use std::fs::{
+      create_dir, remove_dir_all, 
+      create_dir_all, write
+   };
+   use std::env::temp_dir;
+   use std::process::Command;
+   use std::time::Instant;
 
    #[test]
    fn testa_struct_item() {
@@ -399,8 +422,9 @@ mod tests {
       fn gera() -> Self {
          // array-dinâmica.
          let mut lista:Vec<Item> = Vec::new();
+         let caminho = temp_dir().as_path().join("data_teste");
          // analisando cada objeto no diretório "Downloads".
-         for entry in read_dir("data_teste").unwrap() {
+         for entry in read_dir(caminho).unwrap() {
             let entrada = entry.unwrap();
             // se for um diretório ignorar ...
             let e_um_diretorio:bool = {
@@ -408,14 +432,34 @@ mod tests {
                .path()
                .is_dir()
             };
-            if e_um_diretorio { continue; }
+            // no caso de se é um diretório.
+            if e_um_diretorio { 
+               let validade:Duration;
+               let item: Item;
+               const ALGUNS_DIAS:u64 = 13;
+               let caminho = entrada.path();
+               let auxiliar = SystemTime::now();
+               let ua_medio = remocao_dir::acesso_medio_dir(caminho.as_path());
+               let tempo = Duration::from_secs_f32(ua_medio);
+               let ua = {
+                  auxiliar
+                  .checked_add(tempo)
+                  .expect("falha no ST do caminho passado!")
+               };
+
+               // criando o ítem e adicionando na lista.
+               validade = Duration::from_secs(ALGUNS_DIAS);
+               item = Item::cria(caminho, ua, validade);
+               lista.push(item);
+               continue;
+            }
             
             // a extensão do arquivo.
             let aux_path = entrada.path();
             let extensao:&str = {
                match aux_path.as_path().extension() {
                   Some(string) => string.to_str().unwrap(),
-                  None => { continue; "nem chega aqui!" },
+                  None => { continue; },
                }
             };
             // computando a 'validade' ...
@@ -530,6 +574,13 @@ mod tests {
    }
 
    fn gera_arquivos_de_teste() {
+      // criando pasta no temp para teste!
+      match create_dir(temp_dir().as_path().join("data_teste")) {
+         Ok(_) => 
+            { println!("diretório criado."); }
+         Err(_) => 
+            { println!("diretório já existente!"); }
+      };
       let nomes_arquivos = [
          "fonte_i.ttf", "fonte_ii.ttf",
          "texto_i.txt", "texto_ii.txt",
@@ -538,12 +589,12 @@ mod tests {
          "livro3.pdf", "OSi.iso", "OSii.iso"
       ];
       for nome in nomes_arquivos {
-         let mut caminho = PathBuf::new();
+         let mut caminho = temp_dir();
          caminho.push("data_teste");
          caminho.push(nome);
+         dbg!(caminho.as_path());
          let mensagem = b"nada de dados relevantes!!!";
-         write(caminho.to_path_buf(), mensagem)
-         .unwrap();
+         write(caminho, mensagem).unwrap();
          thread::sleep(Duration::from_secs(5));
       }
    } 
@@ -564,16 +615,62 @@ mod tests {
    #[test]
    fn testa_diretorio_vazio() {
       // criando diretório/e arquivo para testes ...
-      let caminho = Path::new("data_teste/pasta_vazia_teste/");
-      fs::create_dir_all(caminho).unwrap();   
-      assert!(diretorio_vazio(caminho));
-      let arq_caminho = caminho.join("arquivo_teste.txt");
-      fs::write(
-         arq_caminho.as_path(), 
-         b"nenhum dado relevante!"
-      ).unwrap();
-      assert!(!diretorio_vazio(caminho));
+      let caminho = temp_dir().as_path().join("data_teste");
+      create_dir_all(caminho.as_path()).unwrap();   
+      assert!(diretorio_vazio(caminho.as_path()));
+      let arq_caminho = caminho.as_path().join("arquivo_teste.txt");
+      write(arq_caminho.as_path(), b"nenhum dado relevante!").unwrap();
+      thread::sleep(Duration::from_secs(6));
+      assert!(!diretorio_vazio(caminho.as_path()));
       // removendo o diretório e arquivos criados ...
-      fs::remove_dir_all(caminho).unwrap();
+      remove_dir_all(caminho).unwrap();
+   }
+
+   fn gera_arquivos_de_teste_i() {
+      gera_arquivos_de_teste();
+      let mut comando = Command::new("/usr/bin/unzip");
+      comando.arg("./src/item_de_exclusao/testaRC.zip");
+      comando.arg("-d");
+      comando.arg("/tmp/data_teste/");
+      let msg_erro = concat!(
+         "o processo de descompactação",
+         "no diretório \"/tmp/data_teste/\"",
+         "falhou"
+      );
+      match comando.spawn() {
+         Ok(mut processo) => {
+            processo.wait()
+            .expect("não foi possível aguardar!");
+         } Err(erro) => 
+            { panic!("{}[{}]", msg_erro, erro); }
+      };
+   }
+
+   #[test]
+   fn remocao_com_diretorio_cheio() {
+      // criando diretório/e arquivo para testes ...
+      let caminho = temp_dir().as_path().join("data_teste");
+      create_dir_all(caminho.as_path()).unwrap();   
+      assert!(diretorio_vazio(caminho.as_path()));
+      let arq_caminho = caminho.as_path().join("arquivo_teste.txt");
+      write(arq_caminho.as_path(), b"nenhum dado relevante!").unwrap();
+      thread::sleep(Duration::from_secs(6));
+      gera_arquivos_de_teste_i();
+      let caminho = Path::new("/tmp/data_teste");
+      let mut item = Item::cria(
+         caminho.to_path_buf(),
+         SystemTime::now(),
+         Duration::from_secs(30)
+      );
+      // insiste até apagar o diretório e seus arquivos..
+      let cronometro = Instant::now();
+      let limite = Duration::from_secs(100);
+      while cronometro.elapsed() < limite {
+         println!("{}", item);
+         super::DropPadrao::drop(&mut item);
+         thread::sleep(Duration::from_secs_f32(1.5));
+      }
+      // tem que já ter sido deletado.
+      assert!(true);
    }
 }
