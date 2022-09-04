@@ -294,7 +294,8 @@ impl FilaExclusao {
             let caminho = entrada.path();
             let auxiliar = SystemTime::now();
             let ua_medio = remocao_dir::acesso_medio_dir(caminho.as_path());
-            let tempo = Duration::from_secs_f32(ua_medio);
+            //let tempo = Duration::from_secs(ua_medio as u64);
+            let tempo = Duration::from_secs(ua_medio as u64);
             let ua = {
                auxiliar
                .checked_add(tempo)

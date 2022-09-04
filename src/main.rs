@@ -9,7 +9,8 @@
 mod item_de_exclusao;
 use item_de_exclusao::FilaExclusao;
 mod janela_grafica;
-use janela_grafica::Grafico;
+use janela_grafica::{Grafico};
+mod letreiro;
 
 // biblioteca externa:
 extern crate utilitarios;
