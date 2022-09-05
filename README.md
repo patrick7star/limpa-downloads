@@ -9,3 +9,7 @@ Se você não têm uma pasta "Downloads" onde ficam todos seus downloads feitos 
 
 ### Requisitos: 
 Tal programa é testado principalmente no *Ubuntu-mate 20.04.4 LTS*, más não há nenhum motivo de que não vá funcionar em qualquer distribuição Linux. A versão padrão funciona até no *Windows 10*.
+
+# Detalhes
+No lado esquerdo ficam os *nomes dos arquivos* -- alguns se forem grandes demais para caber no devido espaço, ficam como numa placa de LED se movendo da direita à esquerda para que o nome completo seja mostrado -- que estão nas listas de exclusões, já no lado direito ficam a barra mostrando: mais à esquerda o *tempo restantes*(de forma legível), no centro *a barra de progresso* visual, e  o *percentual númerico* do restante.
+![Exemplo do texto acima](https://drive.google.com/drive/folders/1lajq62hNKcPnrKLFC_tVkTQrR4Ewu02a)
