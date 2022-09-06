@@ -10,29 +10,22 @@
 use std::fs::{remove_dir, remove_file};
 use std::path::Path;
 
-fn e_link_simbolico(caminho:&Path) -> bool {
-   match caminho.read_link() {
-      Ok(_) => true,
-      Err(_) => false
-   }
-}
 
 pub fn remocao_completa(caminho:&Path) {
    for entrada in caminho.read_dir().unwrap() {
       let x = entrada.unwrap().path(); 
-      if e_link_simbolico(x.as_path())
-         { println!("{:#?} é um link simbólico!", x); }
+      if x.as_path().is_symlink() 
+         { eprintln!("{:#?} é um link simbólico!", x); }
       else if x.as_path().is_file() { 
          let nome = x.as_path().file_name().unwrap();
-         print!("removendo {:#?}...", nome); 
+         eprint!("removendo {:#?}...", nome); 
          match remove_file(x) {
             Ok(_) => 
-               { println!("feito!"); }
+               { eprintln!("feito!"); }
             Err(_) =>
-               { println!("ALGO DEU ERRADO!"); }
+               { eprintln!("ALGO DEU ERRADO!"); }
          };
-      }
-      else if x.as_path().is_dir() { 
+      } else if x.as_path().is_dir() { 
          // chamando função de modo recursivo ...
          remocao_completa(x.as_path());
          /* excluindo arquivos do diretório e 
@@ -40,25 +33,27 @@ pub fn remocao_completa(caminho:&Path) {
           * o diretório. */
          print!("removendo [{:#?}] ...", x.as_path());
          match remove_dir(x.as_path()) {
-            Ok(_) => { println!("feito!"); }
-            Err(_) => { println!(""); }
+            Ok(_) => 
+               { eprintln!("feito!"); }
+            Err(_) => 
+               { eprintln!(""); }
          };
       }
    }
    // removendo diretório "raíz" passado.
-   print!("removendo [{:#?}] ...", caminho);
+   eprint!("removendo [{:#?}] ...", caminho);
    match remove_dir(caminho) {
       Ok(_) => 
-         { println!("feito!"); }
+         { eprintln!("feito!"); }
       Err(_) => 
-         { println!("ALGO DEU ERRADO!!!"); }
+         { eprintln!("ALGO DEU ERRADO!!!"); }
    };
 }
 
 fn auxiliar_amd(caminho:&Path, tm:&mut f32, ctd:&mut f32) {
    for entrada in caminho.read_dir().unwrap() {
       let x = entrada.unwrap().path(); 
-      if e_link_simbolico(x.as_path()) 
+      if x.as_path().is_symlink()
          { continue; }
       else if x.as_path().is_file() { 
          *tm += {
