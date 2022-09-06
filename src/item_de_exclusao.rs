@@ -18,50 +18,15 @@ use super::letreiro::Letreiro;
 
 // próprio módulo.
 mod remocao_dir;
+mod string_extensao;
+//use string_extensao::StringExtensao;
 
-/* reescrevendo o método do len da string para 
- * pegar acentuações conhecidas de dois bytes.
- */
-trait StringExtensao {
-   /* computa o tamanho de bytes entre strings
-    * levando em conta caractéres de 2 bytes. */
-   fn len(&self) -> usize;
-}
 
 /* Trait para re-implementação do Drop com "saída"
  * na tela. Está versão é fora do "ncurses", que 
  * têm outra na parte gráfica. */
 trait DropPadrao { fn drop(&mut self); }
 
-// para slice-strings(stack-strings) `&str`.
-impl StringExtensao for str {
-   fn len(&self) -> usize {
-      // conta a quantia de acentuações comuns.
-      let mut qtd:usize = 0;
-      for ch in self.chars() {
-         if ch == 'á' { qtd += 1; }
-         if ch == 'à' { qtd += 1; }
-         if ch == 'â' { qtd += 1; }
-         if ch == 'ã' { qtd += 1; }
-         if ch == 'é' { qtd += 1; }
-         if ch == 'ê' { qtd += 1; }
-         if ch == 'í' { qtd += 1; }
-         if ch == 'ô' { qtd += 1; }
-         if ch == 'õ' { qtd += 1; }
-         if ch == 'ó' { qtd += 1; }
-         if ch == 'ú' { qtd += 1; }
-         if ch == 'ç' { qtd += 1; }
-      }
-      let tamanho = self.len();
-      return tamanho - qtd;
-   }
-}
-
-// para heap-strings `String`.
-impl StringExtensao for String {
-   fn len(&self) -> usize 
-      { self.as_str().len() }
-}
 
 /** elememento com dados e, principalmente 
  dada de exclusão.  */
@@ -196,12 +161,17 @@ pub struct FilaExclusao {
    // todos ítens da raíz dada.
    pub todos: Vec<Item>,
    // lista de exclusão nas próximas horas.
-   pub proximas_exclusao: Vec<Item>
+   pub proximas_exclusao: Vec<Item>,
+   // fila nome dos itens deletados para demonstração.
+   pub fila_de_outputs: Vec<String>
 }
 
 impl FilaExclusao {
    // constante contendo raíz do diretório análisado.
-   const RAIZ:&'static str = concat!(env!("HOME"), "/Downloads");
+   const RAIZ:&'static str = concat!(
+      env!("HOME"), 
+      "/Downloads"
+   );
 
    /// verifica se não há mais nada analisar e deletar.
    pub fn vazia(&self) -> bool { 
@@ -278,23 +248,20 @@ impl FilaExclusao {
 
    /// gera itens baseado no diretório RAÍZ.
    pub fn gera() -> Self {
-      // array-dinâmica.
       let mut lista:Vec<Item> = Vec::new();
       // analisando cada objeto no diretório "Downloads".
       for entry in read_dir(FilaExclusao::RAIZ).unwrap() {
          let entrada = entry.unwrap();
-         // se for um diretório ignorar ...
-         let e_um_diretorio:bool = entrada.path().is_dir();
 
          // no caso de se é um diretório.
-         if e_um_diretorio { 
+         if entrada.path().is_dir() {
             let validade:Duration;
             let item: Item;
-            const ALGUNS_DIAS:u64 = (24.0*3600.0*13.9) as u64;
+            const DIA: f32 = 24.0 * 3600.0;
+            const ALGUNS_DIAS:u64 = (DIA * 13.9) as u64;
             let caminho = entrada.path();
             let auxiliar = SystemTime::now();
             let ua_medio = remocao_dir::acesso_medio_dir(caminho.as_path());
-            //let tempo = Duration::from_secs(ua_medio as u64);
             let tempo = Duration::from_secs(ua_medio as u64);
             let ua = {
                auxiliar
@@ -364,7 +331,8 @@ impl FilaExclusao {
       // criando instância em sí, já retornando ...
       return FilaExclusao {
          todos: lista,
-         proximas_exclusao: Vec::new()
+         proximas_exclusao: Vec::new(),
+         fila_de_outputs: Vec::new()
       }
    }
 }

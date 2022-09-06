@@ -201,6 +201,7 @@ impl FilaExclusao {
                .remove(qtd-1)
             };
             DropGrafico::drop(&mut remocao, &janela); 
+            napms(700);
          }
          qtd -= 1;
       }
@@ -273,7 +274,6 @@ impl Grafico for FilaExclusao {
             _ => (),
          };
          // atualiza nova escrita.
-         //janela.refresh();
          doupdate();
          // deleta ítems que expiraram recentemente.
          janela = self.limpa_items_expirados(janela);
@@ -293,16 +293,21 @@ impl DropGrafico for Item {
    fn drop(&mut self, janela:&Window) {
       if self.expirado() { 
          // movendo para linha debaixo ...
-         let linha = janela.get_max_y();
+         let linha = janela.get_cur_y();
          // explicitando-se o que vai fazer.
          janela.mvaddstr(linha + 1, 0, "==> removendo");
 
          // nome da string de forma mais conveniênte.
          let nome:String = {
-            let lt = janela.get_max_x();
-            let c:i32 = self.nome.len() as i32 + 19;
+            //let lt = janela.get_max_x();
+            //let c:i32 = self.nome.len() as i32 + 19;
+            let (lt, c):(i32, i32) = (
+               janela.get_max_x(),
+               (self.nome.len() as i32) + 19
+            );
             if c > lt { 
-               let indice:usize = lt as usize - 5;
+               let indice: usize;
+               indice = (lt as usize) - 5;
                let parte_str = self.nome.get(0..indice);
                format!("\"{}\"...", parte_str.unwrap()) 
             }
@@ -317,6 +322,7 @@ impl DropGrafico for Item {
          janela.addstr("SUCEDIDO");
          janela.color_set(0);
          janela.addch(']');
+         janela.refresh();
 
          // deletando arquivos e restos em sí.
          drop(self);
