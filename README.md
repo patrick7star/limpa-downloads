@@ -13,7 +13,7 @@ Tal programa é testado principalmente no *Ubuntu-mate 20.04.4 LTS*, más não h
 # Detalhes
 No lado esquerdo ficam os *nomes dos arquivos* -- alguns se forem grandes demais para caber no devido espaço, ficam como numa placa de LED se movendo da direita à esquerda para que o nome completo seja mostrado -- que estão nas listas de exclusões, já no lado direito ficam a barra mostrando: mais à esquerda o *tempo restantes*(de forma legível), no centro *a barra de progresso* visual, e  o *percentual númerico* do restante.
 
-![Exemplo do texto acima](https://github.com/patrick7star/estritamente-para-transferencia/blob/main/limpa-downloads-ncursesIII.png)
+![Exemplo do texto acima](https://github.com/patrick7star/estritamente-para-transferencia/blob/main/limpa-downloads-ncursesIII.png.svg)
 
 As cores que aparecem na versão do `ncurses` são pelo seguinte: estão relacionadas ao nível do progresso; o verde quer dizer que estão no começo até quase a metade; deste marco até a faixa dos dez fica amarelo(progresso está na metade do processo); o último estágio é o vermelho partindo deste ponto até o fim que significa exatamente isso, o fim.
 
