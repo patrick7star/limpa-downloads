@@ -51,6 +51,17 @@ pub fn remocao_completa(caminho:&Path) {
 }
 
 fn auxiliar_amd(caminho:&Path, tm:&mut f32, ctd:&mut f32) {
+   *ctd += 1.0;
+   *tm += match caminho.metadata() {
+      Ok(metadados) => {
+         metadados
+         .accessed()
+         .unwrap()
+         .elapsed()
+         .unwrap()
+         .as_secs_f32()
+      } Err(_) => 0.0
+   };
    for entrada in caminho.read_dir().unwrap() {
       let x = entrada.unwrap().path(); 
       if x.as_path().is_symlink()
@@ -81,6 +92,17 @@ pub fn acesso_medio_dir(caminho:&Path) -> f32 {
    return tempo / contador;
 }
 
+pub fn diretorio_vazio(caminho: &Path) -> bool {
+   let mut contador = 0;
+   match caminho.read_dir() {
+      Ok(entradas) => {
+         for _ in entradas
+            { contador += 1; }
+      } Err(_) => ()
+   };
+   return dbg!(contador) == 0;
+}
+
 #[cfg(test)]
 mod tests {
    extern crate utilitarios;
@@ -89,9 +111,17 @@ mod tests {
       arvore::arvore
    };
    use std::path::Path;
-   use super::{acesso_medio_dir, remocao_completa};
+   use super::{
+      remove_dir,
+      acesso_medio_dir, 
+      remocao_completa,
+      diretorio_vazio
+   };
+   use std::fs::create_dir;
    use std::env::temp_dir;
    use std::process::Command;
+   use std::thread::sleep;
+   use std::time::Duration;
 
    #[test]
    fn testa_rc() {
@@ -135,5 +165,19 @@ mod tests {
       println!("último acesso: {}", tempo(t as u64, true));
       // avaliação manual.
       assert!(true);
+   }
+
+   #[test]
+   #[allow(non_snake_case)]
+   fn testaDV() {
+      let caminho = temp_dir().as_path().join("DirTeste/");
+      println!("{}", caminho.as_path().display());
+      assert!(!caminho.exists());
+      create_dir(caminho.as_path()).unwrap();
+      assert!(caminho.exists());
+      sleep(Duration::from_secs(5));
+      assert!(diretorio_vazio(caminho.as_path()));
+      remove_dir(caminho.as_path()).unwrap();
+      assert!(!caminho.as_path().exists());
    }
 }
