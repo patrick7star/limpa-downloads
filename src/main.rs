@@ -73,7 +73,7 @@ fn visualizacao_padrao(mut fila:FilaExclusao) {
  * debug, quanto para o binário final. */
 use std::os::unix::fs::symlink;
 use std::env::current_exe;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 // complementa link ao executável.
 fn computa_caminho(caminho_str:&str) -> PathBuf {

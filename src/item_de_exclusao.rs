@@ -270,7 +270,10 @@ impl FilaExclusao {
             };
 
             // criando o ítem e adicionando na lista.
-            validade = Duration::from_secs(ALGUNS_DIAS);
+            if remocao_dir::diretorio_vazio(entrada.path().as_path())
+               { validade = Duration::from_secs(5 * 60); }
+            else 
+               { validade = Duration::from_secs(ALGUNS_DIAS); }
             item = Item::cria(caminho, ua, validade);
             lista.push(item);
             continue;
@@ -474,7 +477,8 @@ mod tests {
          // criando instância em sí, já retornando ...
          return FilaExclusao {
             todos: lista,
-            proximas_exclusao: Vec::new()
+            proximas_exclusao: Vec::new(),
+            fila_de_outputs: Vec::new()
          }
       }
 
