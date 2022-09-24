@@ -100,7 +100,7 @@ pub fn diretorio_vazio(caminho: &Path) -> bool {
             { contador += 1; }
       } Err(_) => ()
    };
-   return dbg!(contador) == 0;
+   return contador == 0;
 }
 
 #[cfg(test)]
