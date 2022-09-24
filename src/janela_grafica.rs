@@ -12,17 +12,20 @@ use pancurses::{
    endwin, napms, initscr, 
    noecho, curs_set, start_color, 
    init_pair, use_default_colors, 
-   doupdate, Input, Window, COLOR_GREEN,
-   COLOR_RED, COLOR_YELLOW,
-   COLOR_CYAN, A_NORMAL, 
-   A_UNDERLINE, A_BOLD
+   Input, Window, COLOR_GREEN,
+   COLOR_RED, COLOR_YELLOW, COLOR_CYAN, 
+   A_NORMAL, A_UNDERLINE, A_BOLD
 };
 extern crate utilitarios;
-use utilitarios::impressao::circunscrever;
+use utilitarios::{
+   impressao::circunscrever,
+   legivel::tempo
+};
 
 // minha biblioteca:
 use crate::item_de_exclusao::{Item, FilaExclusao};
 use super::letreiro::StringDinamica;
+use super::tempo_tools::Temporizador;
 
 // biblioteca padrão do Rust:
 use std::time::Duration;
@@ -210,6 +213,28 @@ impl FilaExclusao {
    }
 }
 
+/* mostra o contador do tempo restante de 
+ * exibição do programa gráfico. */
+fn escreve_temporizador(
+   janela: &Window, 
+   contador: &mut Temporizador
+) {
+   // converte de milisegundos para segundos.
+   let t = contador.decorrido_seg();
+   // contagem regressiva.
+   let r = contador.meta()-t;
+   let tempo_str = tempo(r, true);
+   let c = tempo_str.len() as i32;
+   // desenha na janela referênciada.
+   janela.mvaddstr(
+      // coordenadas Y e X:
+      janela.get_max_y() - 2,
+      janela.get_max_x() - (c + 3),
+      // texto formatado e "traduzido".
+      tempo_str.as_str()
+   );
+}
+
 impl Grafico for FilaExclusao {
    fn visualiza(&mut self) { 
       // janela padrão que se ajusta com o terminal.
@@ -246,6 +271,8 @@ impl Grafico for FilaExclusao {
       }
 
       // rodar ncurses até a fila esváziar.
+      let duracao = Duration::from_secs(80);
+      let mut timer = Temporizador::cria(duracao);
       while !self.vazia() {
          // reordena ítens de de ambas listas.
          self.reordenacao_dos_items();
@@ -262,19 +289,23 @@ impl Grafico for FilaExclusao {
          match janela.getch() {
             Some(Input::Character(ch)) => {
                // sair do programa.
-               if ch == 's'
+               if ch == 's' || ch == 'S'
                   { break; }
-            },
-            Some(Input::KeyDown) => {
-               janela.mvaddstr(0, 0, "para BAIXO!");
-            },
-            Some(Input::KeyUp) => {
-               janela.mvaddstr(0, 0, "para CIMA!");
-            },
-            _ => (),
+            } Some(Input::KeyDown) => 
+               { janela.mvaddstr(0, 0, "para BAIXO!"); }
+            Some(Input::KeyUp) => 
+               { janela.mvaddstr(0, 0, "para CIMA!"); }
+            _ => ()
          };
+
+         if !self.ha_exclusao_hoje() {
+            escreve_temporizador(&janela, &mut timer);
+            // quebra loop se o temporizador "se esgota".
+            if *timer { break; }
+         }
+
          // atualiza nova escrita.
-         doupdate();
+         janela.refresh(); 
          // deleta ítems que expiraram recentemente.
          janela = self.limpa_items_expirados(janela);
 

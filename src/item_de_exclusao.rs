@@ -25,7 +25,8 @@ mod string_extensao;
 /* Trait para re-implementação do Drop com "saída"
  * na tela. Está versão é fora do "ncurses", que 
  * têm outra na parte gráfica. */
-trait DropPadrao { fn drop(&mut self); }
+trait DropPadrao 
+   { fn drop(&mut self); }
 
 
 /** elememento com dados e, principalmente 
@@ -157,13 +158,13 @@ impl DropPadrao for Item {
    }
 }
 
+
+
 pub struct FilaExclusao {
    // todos ítens da raíz dada.
    pub todos: Vec<Item>,
    // lista de exclusão nas próximas horas.
    pub proximas_exclusao: Vec<Item>,
-   // fila nome dos itens deletados para demonstração.
-   pub fila_de_outputs: Vec<String>
 }
 
 impl FilaExclusao {
@@ -180,6 +181,28 @@ impl FilaExclusao {
        * considerada. */
       self.todos.is_empty() && 
       self.proximas_exclusao.is_empty() 
+   }
+
+   /* função pega uma slice-string e imprime-a 
+    * centralizando-a baseado no seu tamanho. */
+   fn imprime_no_centro<'a>(string:&'a str) {
+      // quantia de caractéres da string.
+      let tamanho = string.len();
+      // largura total do terminal.
+      let largura:usize = match terminal_largura() {
+         Ok(_enum) => match _enum {
+            TD::Largura(l) => l as usize,
+            _ => 32,
+         },
+         Err(_) => 32,
+      };
+      // espaços em branco da borda esquerda.
+      let recuo = (largura - tamanho) / 2 - 1;
+      println!(
+         "{recuo}{}:", 
+         string.to_uppercase(), 
+         recuo = &" ".repeat(recuo)
+      );
    }
 
    /// visualiza e opera possível exclusão.
@@ -205,34 +228,12 @@ impl FilaExclusao {
          qtd -= 1;
       }
 
-      /* função pega uma slice-string e imprime-a 
-       * centralizando-a baseado no seu tamanho. */
-      fn imprime_no_centro<'a>(string:&'a str) {
-         // quantia de caractéres da string.
-         let tamanho = string.len();
-         // largura total do terminal.
-         let largura:usize = match terminal_largura() {
-            Ok(_enum) => match _enum {
-               TD::Largura(l) => l as usize,
-               _ => 32,
-            },
-            Err(_) => 32,
-         };
-         // espaços em branco da borda esquerda.
-         let recuo = (largura - tamanho) / 2 - 1;
-         println!(
-            "{recuo}{}:", 
-            string.to_uppercase(), 
-            recuo = &" ".repeat(recuo)
-         );
-      }
-
       // visualizando lista de todos 'Item's.
       println!("\n");
-      imprime_no_centro("lista de items");
+      FilaExclusao::imprime_no_centro("lista de items");
       for item in self.todos.iter() 
          { println!("{}", item); }
-      imprime_no_centro("exclusão de hoje");
+      FilaExclusao::imprime_no_centro("exclusão de hoje");
       for item in self.proximas_exclusao.iter() 
          { println!("{}", item); }
       println!("\n");
@@ -335,9 +336,12 @@ impl FilaExclusao {
       return FilaExclusao {
          todos: lista,
          proximas_exclusao: Vec::new(),
-         fila_de_outputs: Vec::new()
       }
    }
+
+   /// há algo na fila de "exclusão diária".
+   pub fn ha_exclusao_hoje(&self) -> bool
+      { self.proximas_exclusao.len() > 0 }
 }
 
 // verifica se o diretório passado está vázio.
