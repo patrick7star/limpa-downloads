@@ -185,6 +185,7 @@ impl FilaExclusao {
 
    /* função pega uma slice-string e imprime-a 
     * centralizando-a baseado no seu tamanho. */
+   #[allow(dead_code)]
    fn imprime_no_centro<'a>(string:&'a str) {
       // quantia de caractéres da string.
       let tamanho = string.len();
@@ -218,7 +219,7 @@ impl FilaExclusao {
             // tempo restante do ítem.
             let tr = item.tempo_restante();
             // tempo de hoje em segundos.
-            let hoje:Duration = Duration::from_secs(24*3600);
+            let hoje = Duration::from_secs(24*3600);
             tr < hoje 
          };
          if sera_excluido_hoje {
@@ -228,22 +229,24 @@ impl FilaExclusao {
          qtd -= 1;
       }
 
-      // visualizando lista de todos 'Item's.
-      println!("\n");
-      FilaExclusao::imprime_no_centro("lista de items");
-      for item in self.todos.iter() 
-         { println!("{}", item); }
-      FilaExclusao::imprime_no_centro("exclusão de hoje");
-      for item in self.proximas_exclusao.iter() 
-         { println!("{}", item); }
+      // lista de exclusão.
+      let mut referencias: Vec<&mut Item>;
+      referencias = Vec::with_capacity(qtd);
+      /* não se mostra expirados, serão excluídos
+       * em seguida, aqui serão colocadas na lista
+       * de exclusão. */
+      for item in self.proximas_exclusao.iter_mut() { 
+         if !item.expirado()
+            { println!("{}", item); }
+         else
+            { referencias.push(item); }
+      }
       println!("\n");
 
-      let mut qtd = self.proximas_exclusao.len();
-      while qtd > 0 {
-         let item = self.proximas_exclusao.get_mut(qtd-1).unwrap();
+      // exclui referências, expiradas, escolhidas.
+      for item in referencias.drain(..) {
          if item.expirado() 
-            { DropPadrao::drop(&mut self.proximas_exclusao.remove(qtd-1)); }
-         qtd -= 1;
+            { DropPadrao::drop(item); }
       }
    }
 
