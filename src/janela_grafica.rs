@@ -278,7 +278,7 @@ impl Grafico for FilaExclusao {
          self.reordenacao_dos_items();
          // visualizando lista de todos 'Item's.
          // apaga tudo já escrito na janela.
-         janela.erase();
+         janela.clear();
          // imprime ambos tipos de listagens:
          escreve_listas(
             &janela, 
