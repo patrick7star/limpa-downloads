@@ -1,0 +1,5 @@
+[package]
+name = "utilitarios"
+version = "1.4.2"
+edition = "2018"
+license = "mit"
