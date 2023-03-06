@@ -19,7 +19,8 @@ use pancurses::{
 extern crate utilitarios;
 use utilitarios::{
    impressao::circunscrever,
-   legivel::tempo
+   legivel::tempo,
+   aleatorio::sortear
 };
 
 // minha biblioteca:
@@ -30,6 +31,7 @@ use super::tempo_tools::Temporizador;
 // biblioteca padrão do Rust:
 use std::time::Duration;
 use std::str::FromStr;
+use std::process::Command;
 
 // ID's de todas paletas de cores criadas e utilizadas:
 static LONGE:i16 = 99;
@@ -216,8 +218,8 @@ impl FilaExclusao {
 /* mostra o contador do tempo restante de 
  * exibição do programa gráfico. */
 fn escreve_temporizador(
-   janela: &Window, 
-   contador: &mut Temporizador
+  janela: &Window, 
+  contador: &mut Temporizador
 ) {
    // converte de milisegundos para segundos.
    let t = contador.decorrido_seg();
@@ -234,6 +236,7 @@ fn escreve_temporizador(
       tempo_str.as_str()
    );
 }
+
 
 impl Grafico for FilaExclusao {
    fn visualiza(&mut self) { 
@@ -255,19 +258,31 @@ impl Grafico for FilaExclusao {
       init_pair(96, COLOR_CYAN, -1);
       init_pair(95, COLOR_RED, -1);
 
-      // se já inicializar vázio, dá um tempo para mostrar
-      // a interface específica deste caso.
+      /* com nada, apenas plota notificação de
+       * que a interface não será lançada, pois 
+       * não há nada a excluir. */
       if self.vazia() {
-         // imprime ambos tipos de listagens:
-         escreve_listas(
-            &janela, 
-            &mut self.todos, 
-            &mut self.proximas_exclusao
-         );
-         // mostra resultado novo da tela.
-         janela.refresh();
-         // três segundos e meio de espera.
-         napms(3_500);
+         /* uma em cada dez, mostra a interface.
+          * não quero, por enquanto, desabilitar
+          * este antigo 'feature' por completo. */
+         if sortear::u8(1..=10) == 5 {
+            // imprime ambos tipos de listagens:
+            escreve_listas(
+               &janela, 
+               &mut self.todos, 
+               &mut self.proximas_exclusao
+            );
+            // mostra resultado novo da tela.
+            janela.refresh();
+            // três segundos e meio de espera.
+            napms(3_500);
+         } else {
+            // finalizando janela.
+            endwin();
+            popup_notificacao("o diretório está completamente vázio");
+         } 
+         // finalizando janela.
+         endwin();
       }
 
       // rodar ncurses até a fila esváziar.
@@ -359,6 +374,28 @@ impl DropGrafico for Item {
          drop(self);
       }
    }
+}
+
+/* popup da mensagem específicada. */
+fn popup_notificacao(mensagem: &str) {
+   let icone = "--icon=trashcan_empty";
+   let argumentos:[&str; 4] = [
+      "--expire-time=25000",
+      //"--icon=object-rotate-left",
+      icone,
+      "--app-name=LimpaDownloads",
+      mensagem
+   ];
+
+   // executando comando ...
+   Command::new("notify-send")
+   .args(argumentos.into_iter())
+   .spawn().unwrap()
+   .wait().unwrap();
+
+   /* mensagem dizendo o que foi feito, ou
+    * melhor, o que não foi. */
+   println!("{}, portanto nenhuma ação.", mensagem);
 }
 
 

@@ -13,7 +13,6 @@ use std::string::String;
 // biblioteca externa:
 extern crate utilitarios;
 use utilitarios::barra_de_progresso::temporizador_progresso;
-use utilitarios::terminal_dimensao::{TD, terminal_largura};
 use super::letreiro::Letreiro;
 
 // próprio módulo.
@@ -184,7 +183,7 @@ impl FilaExclusao {
    }
 
    /* função pega uma slice-string e imprime-a 
-    * centralizando-a baseado no seu tamanho. */
+    * centralizando-a baseado no seu tamanho. 
    #[allow(dead_code)]
    fn imprime_no_centro<'a>(string:&'a str) {
       // quantia de caractéres da string.
@@ -204,7 +203,7 @@ impl FilaExclusao {
          string.to_uppercase(), 
          recuo = &" ".repeat(recuo)
       );
-   }
+   }*/
 
    /// visualiza e opera possível exclusão.
    pub fn visualiza(&mut self) {
@@ -369,6 +368,7 @@ mod tests {
    use std::env::temp_dir;
    use std::process::Command;
    use std::time::Instant;
+   use utilitarios::terminal_dimensao::{terminal_largura};
 
    #[test]
    fn testa_struct_item() {

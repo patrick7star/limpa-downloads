@@ -35,6 +35,5 @@ fn main() {
       // criando executáveis se não houver.
       links::linka_executaveis("LD");
    }
-
 }
 
