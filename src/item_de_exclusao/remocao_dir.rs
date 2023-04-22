@@ -9,10 +9,14 @@
 // biblioteca padrão:
 use std::fs::{remove_dir, remove_file};
 use std::path::Path;
+use std::fmt::Debug;
 
 
-pub fn remocao_completa(caminho:&Path) {
-   for entrada in caminho.read_dir().unwrap() {
+pub fn remocao_completa<P>(caminho:&P) 
+  where P: AsRef<Path> + ?Sized + Debug
+{
+   let entradas = caminho.as_ref().read_dir().unwrap();
+   for entrada in  entradas {
       let x = entrada.unwrap().path(); 
       if x.as_path().is_symlink() 
          { eprintln!("{:#?} é um link simbólico!", x); }
@@ -50,19 +54,18 @@ pub fn remocao_completa(caminho:&Path) {
    };
 }
 
-fn auxiliar_amd(caminho:&Path, tm:&mut f32, ctd:&mut f32) {
+fn auxiliar_amd<P>(caminho:&P, tm:&mut f32, ctd:&mut f32) 
+  where P: AsRef<Path> + ?Sized
+{
    *ctd += 1.0;
-   *tm += match caminho.metadata() {
+   *tm += match caminho.as_ref().metadata() {
       Ok(metadados) => {
-         metadados
-         .accessed()
-         .unwrap()
-         .elapsed()
-         .unwrap()
-         .as_secs_f32()
+         metadados.accessed()
+         .unwrap().elapsed()
+         .unwrap().as_secs_f32()
       } Err(_) => 0.0
    };
-   for entrada in caminho.read_dir().unwrap() {
+   for entrada in caminho.as_ref().read_dir().unwrap() {
       let x = entrada.unwrap().path(); 
       if x.as_path().is_symlink()
          { continue; }
@@ -85,16 +88,20 @@ fn auxiliar_amd(caminho:&Path, tm:&mut f32, ctd:&mut f32) {
    }
 }
 
-pub fn acesso_medio_dir(caminho:&Path) -> f32 {
+pub fn acesso_medio_dir<P>(caminho:&P) -> f32
+  where P: AsRef<Path> + ?Sized
+{
    let mut tempo: f32 = 0.0;
    let mut contador: f32 = 0.0;
    auxiliar_amd(caminho, &mut tempo, &mut contador);
    return tempo / contador;
 }
 
-pub fn diretorio_vazio(caminho: &Path) -> bool {
+pub fn diretorio_vazio<P>(caminho: &P) -> bool 
+  where P: AsRef<Path> + ?Sized
+{
    let mut contador = 0;
-   match caminho.read_dir() {
+   match caminho.as_ref().read_dir() {
       Ok(entradas) => {
          for _ in entradas
             { contador += 1; }
