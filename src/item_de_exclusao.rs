@@ -17,7 +17,8 @@ use super::letreiro::Letreiro;
 
 // próprio módulo.
 mod remocao_dir;
-mod string_extensao;
+use remocao_dir as RD;
+//mod string_extensao;
 //use string_extensao::StringExtensao;
 
 
@@ -182,29 +183,6 @@ impl FilaExclusao {
       self.proximas_exclusao.is_empty() 
    }
 
-   /* função pega uma slice-string e imprime-a 
-    * centralizando-a baseado no seu tamanho. 
-   #[allow(dead_code)]
-   fn imprime_no_centro<'a>(string:&'a str) {
-      // quantia de caractéres da string.
-      let tamanho = string.len();
-      // largura total do terminal.
-      let largura:usize = match terminal_largura() {
-         Ok(_enum) => match _enum {
-            TD::Largura(l) => l as usize,
-            _ => 32,
-         },
-         Err(_) => 32,
-      };
-      // espaços em branco da borda esquerda.
-      let recuo = (largura - tamanho) / 2 - 1;
-      println!(
-         "{recuo}{}:", 
-         string.to_uppercase(), 
-         recuo = &" ".repeat(recuo)
-      );
-   }*/
-
    /// visualiza e opera possível exclusão.
    pub fn visualiza(&mut self) {
       /* pondo 'Item's que estão prestes a 
@@ -264,16 +242,15 @@ impl FilaExclusao {
             const ALGUNS_DIAS:u64 = (DIA * 13.9) as u64;
             let caminho = entrada.path();
             let auxiliar = SystemTime::now();
-            let ua_medio = remocao_dir::acesso_medio_dir(caminho.as_path());
+            let ua_medio = RD::acesso_medio_dir(&caminho);
             let tempo = Duration::from_secs(ua_medio as u64);
             let ua = {
-               auxiliar
-               .checked_add(tempo)
+               auxiliar.checked_add(tempo)
                .expect("falha no ST do caminho passado!")
             };
 
             // criando o ítem e adicionando na lista.
-            if remocao_dir::diretorio_vazio(entrada.path().as_path())
+            if RD::diretorio_vazio(&entrada.path())
                { validade = Duration::from_secs(5 * 60); }
             else 
                { validade = Duration::from_secs(ALGUNS_DIAS); }
@@ -368,7 +345,6 @@ mod tests {
    use std::env::temp_dir;
    use std::process::Command;
    use std::time::Instant;
-   use utilitarios::terminal_dimensao::{terminal_largura};
 
    #[test]
    fn testa_struct_item() {
@@ -418,7 +394,7 @@ mod tests {
                const ALGUNS_DIAS:u64 = 13;
                let caminho = entrada.path();
                let auxiliar = SystemTime::now();
-               let ua_medio = remocao_dir::acesso_medio_dir(caminho.as_path());
+               let ua_medio = RD::acesso_medio_dir(caminho.as_path());
                let tempo = Duration::from_secs_f32(ua_medio);
                let ua = {
                   auxiliar
@@ -485,7 +461,7 @@ mod tests {
          return FilaExclusao {
             todos: lista,
             proximas_exclusao: Vec::new(),
-            fila_de_outputs: Vec::new()
+            //fila_de_outputs: Vec::new()
          }
       }
 
@@ -511,17 +487,16 @@ mod tests {
             qtd -= 1;
          }
 
+         use utilitarios::terminal_dimensao::
+            { Largura, terminal_largura };
          /* função pega uma slice-string e imprime-a 
           * centralizando-a baseado no seu tamanho. */
          fn imprime_no_centro<'a>(string:&'a str) {
             // quantia de caractéres da string.
             let tamanho = string.len();
             // largura total do terminal.
-            let largura:usize = match terminal_largura() {
-               Ok(_enum) => match _enum {
-                  TD::Largura(l) => l as usize,
-                  _ => 32,
-               },
+            let largura = match terminal_largura() {
+               Ok(Largura(l)) => l as usize,
                Err(_) => 32,
             };
             // espaços em branco da borda esquerda.
@@ -590,7 +565,7 @@ mod tests {
          thread::sleep(Duration::from_secs(1));
       }
       assert!(true);
-   }
+   } 
 
    #[test]
    fn testa_diretorio_vazio() {
