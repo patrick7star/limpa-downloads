@@ -506,16 +506,26 @@ mod tests {
       }
       return validades;
    }
+   
    #[test]
    #[should_panic="cabeçalho sem conteúdo"]
    fn tiposDeArquivosSemConteudo() {
-      let caminho_str = "tests/configuração_sem_conteúdo.conf";
+      let caminho_str = concat!(
+         "src/item_de_exclusao/testes",
+         "/configuração_sem_conteúdo.conf"
+      );
       tipos_de_arquivos_teste(caminho_str); 
    }
+
    #[test]
    #[should_panic="cabeçalho 'Tipos De Arquivos' não existe no arquivo"]
    fn tiposDeArquivosSemCabecalho() {
-      let caminho_str = "tests/configuração_sem_cabeçalho.conf";
-      tipos_de_arquivos_teste(caminho_str); 
+      tipos_de_arquivos_teste(
+         concat!( 
+            "src/item_de_exclusao/testes",
+            "/configuração_sem_cabeçalho.conf"
+         )
+      );
    }
+
 }
