@@ -13,6 +13,8 @@ use janela_grafica::{Grafico};
 mod letreiro;
 mod links;
 mod tempo_tools;
+#[allow(unused)]
+mod configuracao;
 
 // biblioteca padrão do Rust:
 use std::env::args;

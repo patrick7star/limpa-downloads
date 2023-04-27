@@ -17,10 +17,10 @@ use super::letreiro::Letreiro;
 
 // próprio módulo.
 mod remocao_dir;
-use remocao_dir as RD;
-//mod string_extensao;
-//use string_extensao::StringExtensao;
-
+use remocao_dir::{
+   self as RD,
+   dir_sem_arquivos as diretorio_esta_vazio
+};
 
 /* Trait para re-implementação do Drop com "saída"
  * na tela. Está versão é fora do "ncurses", que 
@@ -250,7 +250,8 @@ impl FilaExclusao {
             };
 
             // criando o ítem e adicionando na lista.
-            if RD::diretorio_vazio(&entrada.path())
+            //if RD::diretorio_vazio(&entrada.path())
+            if diretorio_esta_vazio(&entrada.path())
                { validade = Duration::from_secs(5 * 60); }
             else 
                { validade = Duration::from_secs(ALGUNS_DIAS); }
@@ -261,7 +262,7 @@ impl FilaExclusao {
          
          // a extensão do arquivo.
          let aux_path = entrada.path();
-         let extensao:&str = {
+         let extensao: &str = {
             match aux_path.as_path().extension() {
                Some(s) => s.to_str().unwrap(),
                None => { continue; },
@@ -301,11 +302,8 @@ impl FilaExclusao {
          
          // criando o ítem e adicionando na lista.
          let ua = {
-            entrada
-            .metadata()
-            .unwrap()
-            .accessed()
-            .unwrap()
+            entrada.metadata().unwrap()
+            .accessed().unwrap()
          };
          let item: Item;
          item = Item::cria(entrada.path(), ua, validade);
@@ -608,7 +606,7 @@ mod tests {
       create_dir_all(caminho.as_path()).unwrap();   
       assert!(diretorio_vazio(caminho.as_path()));
       let arq_caminho = caminho.as_path().join("arquivo_teste.txt");
-      write(arq_caminho.as_path(), b"nenhum dado relevante!").unwrap();
+      write(arq_caminho, b"nenhum dado relevante!").unwrap();
       thread::sleep(Duration::from_secs(6));
       gera_arquivos_de_teste_i();
       let caminho = Path::new("/tmp/data_teste");
