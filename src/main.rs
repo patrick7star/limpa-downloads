@@ -9,8 +9,9 @@
 mod item_de_exclusao;
 use item_de_exclusao::FilaExclusao;
 mod janela_grafica;
-use janela_grafica::{Grafico};
+use janela_grafica::Grafico;
 mod letreiro;
+#[cfg(target_os="linux")]
 mod links;
 mod tempo_tools;
 #[allow(unused)]
@@ -28,14 +29,13 @@ fn main() {
    if args().any(|s| s == "ncurses")
       // neste caso inicializa o "ncurses"...
       { Grafico::visualiza(&mut limpeza); }
-   else 
-      /* padrão, apenas mostra lista de exclusão 
+   else
+      /* padrão, apenas mostra lista de exclusão
        * de hoje, e deleta já expirados. */
       { limpeza.visualiza(); }
 
-   if cfg!(unix) {
-      // criando executáveis se não houver.
-      links::linka_executaveis("LD");
-   }
+   // criando executáveis se não houver.
+   #[cfg(target_os="linux")]
+   links::linka_executaveis("LD");
 }
 

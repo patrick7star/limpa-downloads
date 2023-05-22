@@ -5,7 +5,7 @@ use std::time::{SystemTime, Duration};
 use std::ops::Drop;
 use std::fs::{remove_dir, remove_file, read_dir};
 use std::fmt::{
-   Display, Formatter, 
+   Display, Formatter,
    Result as Formato
 };
 use std::string::String;
@@ -23,13 +23,13 @@ use remocao_dir::{
 };
 
 /* Trait para re-implementação do Drop com "saída"
- * na tela. Está versão é fora do "ncurses", que 
+ * na tela. Está versão é fora do "ncurses", que
  * têm outra na parte gráfica. */
-trait DropPadrao 
+trait DropPadrao
    { fn drop(&mut self); }
 
 
-/** elememento com dados e, principalmente 
+/** elememento com dados e, principalmente
  dada de exclusão.  */
 //#[derive(Clone)]
 pub struct Item {
@@ -47,7 +47,7 @@ pub struct Item {
 
 impl Item {
    // cria instância.
-   pub fn cria(caminho:PathBuf, ultimo_acesso:SystemTime, 
+   pub fn cria(caminho:PathBuf, ultimo_acesso:SystemTime,
    validade:Duration) -> Self {
       // extraí nomes do caminho.
       let nome:String = {
@@ -66,7 +66,7 @@ impl Item {
 
    // verifica se o item já expirou.
    pub fn expirado(&mut self) -> bool {
-      /* movimenta letreiro aqui, pois será 
+      /* movimenta letreiro aqui, pois será
        * chamado bem frequentemente neste bloco. */
       self.letreiro.movimenta_letreiro();
 
@@ -79,7 +79,7 @@ impl Item {
             else { false }
          } Err(estimativa) => {
             let acesso = estimativa.duration();
-            if self.validade < acesso  
+            if self.validade < acesso
                { true }
             else { false }
          }
@@ -87,12 +87,12 @@ impl Item {
    }
 
    // tempo restante da validade.
-   pub fn tempo_restante(&mut self) -> Duration { 
-      if !self.expirado() { 
+   pub fn tempo_restante(&mut self) -> Duration {
+      if !self.expirado() {
          match self.ultimo_acesso.elapsed() {
-            Ok(acesso) => 
+            Ok(acesso) =>
                { return self.validade - acesso; }
-            Err(estimativa) => { 
+            Err(estimativa) => {
                let acesso = estimativa.duration();
                return self.validade - acesso;
             }
@@ -124,34 +124,34 @@ impl Display for Item {
 impl Drop for Item {
    // deleta arquivo também. Este é sem output!
    fn drop(&mut self) {
-      /* apenas deleta o arquivo, se o "tempo de 
+      /* apenas deleta o arquivo, se o "tempo de
        * validade" realmente acabou! */
       if self.expirado() {
          let caminho = self.caminho.as_path();
          if caminho.is_file() {
             match remove_file(caminho) {
                Ok(_) => (),
-               Err(_) => 
-                  { panic!("[ERRO!!!] o arquivo ainda continua!"); } 
+               Err(_) =>
+                  { panic!("[ERRO!!!] o arquivo ainda continua!"); }
             };
          }
          // caso específico para pastas vázias:
          else if caminho.is_dir() && diretorio_vazio(caminho)
             { remove_dir(caminho).unwrap(); }
-         /* diretório com conteúdo(pastas e arquivos, 
+         /* diretório com conteúdo(pastas e arquivos,
           * e também subdiretórios com mais arquivos
           * e pastas). */
-         else 
+         else
             { remocao_dir::remocao_completa(caminho); }
       }
    }
 }
 
 impl DropPadrao for Item {
-   /* apenas acaba se, e somente se, 
+   /* apenas acaba se, e somente se,
     * o item expirou. */
    fn drop(&mut self) {
-      print!("==> removendo \"{}\"... ", self.nome); 
+      print!("==> removendo \"{}\"... ", self.nome);
       // remoção do arquivo.
       drop(self);
       println!("realização sucedida.");
@@ -169,23 +169,29 @@ pub struct FilaExclusao {
 
 impl FilaExclusao {
    // constante contendo raíz do diretório análisado.
+   #[cfg(target_os="windows")]
    const RAIZ:&'static str = concat!(
-      env!("HOME"), 
+      env!("HOMEPATH"),
+      "/Downloads"
+   );
+   #[cfg(target_os="linux")]
+   const RAIZ:&'static str = concat!(
+      env!("HOME"),
       "/Downloads"
    );
 
    /// verifica se não há mais nada analisar e deletar.
-   pub fn vazia(&self) -> bool { 
+   pub fn vazia(&self) -> bool {
       /* ambas array-dinâmicas tem que está vázia
        * para a fila como toda, também assim, ser
        * considerada. */
-      self.todos.is_empty() && 
-      self.proximas_exclusao.is_empty() 
+      self.todos.is_empty() &&
+      self.proximas_exclusao.is_empty()
    }
 
    /// visualiza e opera possível exclusão.
    pub fn visualiza(&mut self) {
-      /* pondo 'Item's que estão prestes a 
+      /* pondo 'Item's que estão prestes a
        * ser deletados, na fila de exclusão.
        */
       let mut qtd = self.todos.len();
@@ -197,7 +203,7 @@ impl FilaExclusao {
             let tr = item.tempo_restante();
             // tempo de hoje em segundos.
             let hoje = Duration::from_secs(24*3600);
-            tr < hoje 
+            tr < hoje
          };
          if sera_excluido_hoje {
             let item = self.todos.remove(qtd-1);
@@ -212,7 +218,7 @@ impl FilaExclusao {
       /* não se mostra expirados, serão excluídos
        * em seguida, aqui serão colocadas na lista
        * de exclusão. */
-      for item in self.proximas_exclusao.iter_mut() { 
+      for item in self.proximas_exclusao.iter_mut() {
          if !item.expirado()
             { println!("{}", item); }
          else
@@ -222,7 +228,7 @@ impl FilaExclusao {
 
       // exclui referências, expiradas, escolhidas.
       for item in referencias.drain(..) {
-         if item.expirado() 
+         if item.expirado()
             { DropPadrao::drop(item); }
       }
    }
@@ -253,13 +259,13 @@ impl FilaExclusao {
             //if RD::diretorio_vazio(&entrada.path())
             if diretorio_esta_vazio(&entrada.path())
                { validade = Duration::from_secs(5 * 60); }
-            else 
+            else
                { validade = Duration::from_secs(ALGUNS_DIAS); }
             item = Item::cria(caminho, ua, validade);
             lista.push(item);
             continue;
          }
-         
+
          // a extensão do arquivo.
          let aux_path = entrada.path();
          let extensao: &str = {
@@ -299,7 +305,7 @@ impl FilaExclusao {
             const PADRAO:u64 = (5.9 * 3600.0) as u64;
             validade = Duration::from_secs(PADRAO);
          }
-         
+
          // criando o ítem e adicionando na lista.
          let ua = {
             entrada.metadata().unwrap()
@@ -323,9 +329,9 @@ impl FilaExclusao {
 
 // verifica se o diretório passado está vázio.
 fn diretorio_vazio(caminho:&Path) -> bool {
-   /* tenta percorrer, se conseguir no 
+   /* tenta percorrer, se conseguir no
     * mínimo um não está vázio. */
-   for _ in read_dir(caminho).unwrap() 
+   for _ in read_dir(caminho).unwrap()
       { return false; }
    // se chega até aqui, então está vázio.
    return true;
@@ -337,7 +343,7 @@ mod tests {
    use super::*;
    use std::thread;
    use std::fs::{
-      create_dir, remove_dir_all, 
+      create_dir, remove_dir_all,
       create_dir_all, write
    };
    use std::env::temp_dir;
@@ -356,7 +362,7 @@ mod tests {
          // pausa para não imprimir continuamente.
          thread::sleep(Duration::from_secs(5));
       }
-      // uma avaliação manual, então se 
+      // uma avaliação manual, então se
       // ocorrer como esperado, será mudado.
       DropPadrao::drop(&mut item);
       assert!(true);
@@ -386,7 +392,7 @@ mod tests {
                .is_dir()
             };
             // no caso de se é um diretório.
-            if e_um_diretorio { 
+            if e_um_diretorio {
                let validade:Duration;
                let item: Item;
                const ALGUNS_DIAS:u64 = 13;
@@ -406,7 +412,7 @@ mod tests {
                lista.push(item);
                continue;
             }
-            
+
             // a extensão do arquivo.
             let aux_path = entrada.path();
             let extensao:&str = {
@@ -445,7 +451,7 @@ mod tests {
                const PADRAO:u64 = 10;
                validade = Duration::from_secs(PADRAO);
             }
-            
+
             // criando o ítem e adicionando na lista.
             let acesso:SystemTime = SystemTime::now();
             let item = Item::cria(
@@ -464,7 +470,7 @@ mod tests {
       }
 
       fn visualiza(&mut self) {
-         /* pondo 'Item's que estão prestes a 
+         /* pondo 'Item's que estão prestes a
           * ser deletados, na fila de exclusão.
           */
          let mut qtd = self.todos.len();
@@ -476,7 +482,7 @@ mod tests {
                let tr = item.tempo_restante();
                // tempo de hoje em segundos.
                let hoje:Duration = Duration::from_secs(15);
-               tr < hoje 
+               tr < hoje
             };
             if sera_excluido_hoje {
                let item = self.todos.remove(qtd-1);
@@ -487,7 +493,7 @@ mod tests {
 
          use utilitarios::terminal_dimensao::
             { Largura, terminal_largura };
-         /* função pega uma slice-string e imprime-a 
+         /* função pega uma slice-string e imprime-a
           * centralizando-a baseado no seu tamanho. */
          fn imprime_no_centro<'a>(string:&'a str) {
             // quantia de caractéres da string.
@@ -500,8 +506,8 @@ mod tests {
             // espaços em branco da borda esquerda.
             let recuo = (largura - tamanho) / 2 - 1;
             println!(
-               "{recuo}{}:", 
-               string.to_uppercase(), 
+               "{recuo}{}:",
+               string.to_uppercase(),
                recuo = &" ".repeat(recuo)
             );
          }
@@ -509,17 +515,17 @@ mod tests {
          // visualizando lista de todos 'Item's.
          println!("\n");
          imprime_no_centro("lista de items");
-         for item in self.todos.iter() 
+         for item in self.todos.iter()
             { println!("{}", item); }
          imprime_no_centro("exclusão de hoje");
-         for item in self.proximas_exclusao.iter() 
+         for item in self.proximas_exclusao.iter()
             { println!("{}", item); }
          println!("\n");
 
          let mut qtd = self.proximas_exclusao.len();
          while qtd > 0 {
             let item = self.proximas_exclusao.get_mut(qtd-1).unwrap();
-            if item.expirado() 
+            if item.expirado()
                { DropPadrao::drop(&mut self.proximas_exclusao.remove(qtd-1)); }
             qtd -= 1;
          }
@@ -529,9 +535,9 @@ mod tests {
    fn gera_arquivos_de_teste() {
       // criando pasta no temp para teste!
       match create_dir(temp_dir().as_path().join("data_teste")) {
-         Ok(_) => 
+         Ok(_) =>
             { println!("diretório criado."); }
-         Err(_) => 
+         Err(_) =>
             { println!("diretório já existente!"); }
       };
       let nomes_arquivos = [
@@ -550,7 +556,7 @@ mod tests {
          write(caminho, mensagem).unwrap();
          thread::sleep(Duration::from_secs(5));
       }
-   } 
+   }
 
    #[test]
    fn testa_struct_filaexclusao() {
@@ -563,13 +569,13 @@ mod tests {
          thread::sleep(Duration::from_secs(1));
       }
       assert!(true);
-   } 
+   }
 
    #[test]
    fn testa_diretorio_vazio() {
       // criando diretório/e arquivo para testes ...
       let caminho = temp_dir().as_path().join("data_teste");
-      create_dir_all(caminho.as_path()).unwrap();   
+      create_dir_all(caminho.as_path()).unwrap();
       assert!(diretorio_vazio(caminho.as_path()));
       let arq_caminho = caminho.as_path().join("arquivo_teste.txt");
       write(arq_caminho.as_path(), b"nenhum dado relevante!").unwrap();
@@ -594,7 +600,7 @@ mod tests {
          Ok(mut processo) => {
             processo.wait()
             .expect("não foi possível aguardar!");
-         } Err(erro) => 
+         } Err(erro) =>
             { panic!("{}[{}]", msg_erro, erro); }
       };
    }
@@ -603,7 +609,7 @@ mod tests {
    fn remocao_com_diretorio_cheio() {
       // criando diretório/e arquivo para testes ...
       let caminho = temp_dir().as_path().join("data_teste");
-      create_dir_all(caminho.as_path()).unwrap();   
+      create_dir_all(caminho.as_path()).unwrap();
       assert!(diretorio_vazio(caminho.as_path()));
       let arq_caminho = caminho.as_path().join("arquivo_teste.txt");
       write(arq_caminho, b"nenhum dado relevante!").unwrap();

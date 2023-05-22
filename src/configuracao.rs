@@ -4,13 +4,13 @@
  *   O mesmo de onde este foi copiado, lê um
  * arquivo que têm algumas configurações e
  * especificações, que não são decididas mais
- * por codificação, mas sim, em tempo de 
- * execução(talvez isso possa desacelerar 
+ * por codificação, mas sim, em tempo de
+ * execução(talvez isso possa desacelerar
  * um pouco o programa[dependendo de quantas
  * destas estamos falando]). Como foi feita
- * específicamente para a aplicação que foi 
+ * específicamente para a aplicação que foi
  * copiada, precisamos dá alguns retoques,
- * tanto para já generaliza-lô -- já que 
+ * tanto para já generaliza-lô -- já que
  * ser copiada para cá, implica isso -- como
  * também para esta aplicação específica.
  *
@@ -18,7 +18,7 @@
  * É algo parecido com o JSON, XML e outros
  * serializadores de dados, não tanto robusto
  * quanto(não chega nem perto), mas algo suficiente
- * para o que a aplicação precisa. Por que não 
+ * para o que a aplicação precisa. Por que não
  * usar os já robustos? Bem, eu queria fazer
  * algo para mim, com a minha sintaxe. Consegui
  * e funcionou muito bem, agora estou expandido.
@@ -33,8 +33,15 @@ use std::str::FromStr;
 use std::fs::read_to_string;
 use std::path::{PathBuf, Path};
 
-pub const ARQUIVO_DE:&str = concat!( 
+#[cfg(target_os="linux")]
+pub const ARQUIVO_DE:&str = concat!(
    env!("RUST_CODES"),
+   "/limpa-downloads",
+   "/configuração.conf"
+);
+#[cfg(target_os="windows")]
+pub const ARQUIVO_DE:&str = concat!(
+   env!("RustCodes"),
    "/limpa-downloads",
    "/configuração.conf"
 );
@@ -52,16 +59,16 @@ fn todas_configuracoes(conteudo: String) -> Cabecalho {
 
    for l in conteudo.lines().filter(|s| !s.contains(&"#")) {
       // se char um novo cabeçalho.
-      if l.contains(&"[") && l.contains(&"]") 
-         { cabecalho_detectado = true; } 
+      if l.contains(&"[") && l.contains(&"]")
+         { cabecalho_detectado = true; }
       // acessa atual chave.
-      else { 
+      else {
          /* reduzindo impressões desnecessárias
           * por não serem, obviamente, chaves. */
          if chave == ""
             { continue; }
          match mapa.get_mut(&chave) {
-            Some(atual) => { 
+            Some(atual) => {
                let linha = {
                   l.trim_matches('\r')
                   .trim_matches('\t')
@@ -70,7 +77,7 @@ fn todas_configuracoes(conteudo: String) -> Cabecalho {
                };
                if linha != ""
                   { atual.push(linha); }
-            } None => { 
+            } None => {
                println!("chave '{}' não existe, provavelmente espaço vázio.", chave); }
          };
       }
@@ -95,9 +102,9 @@ fn todas_configuracoes(conteudo: String) -> Cabecalho {
 
 use std::collections::VecDeque;
 type Fila = VecDeque<char>;
-/* separa a parte numérica das partes 
+/* separa a parte numérica das partes
  * textuais. Exige a total ausência de
- * espaços em brancos para funcionar 
+ * espaços em brancos para funcionar
  * adequadamente. */
 fn decomposicao_em_tokens(s: String) -> Vec<String> {
    let mut tokens = Vec::<String>::new();
@@ -114,7 +121,7 @@ fn decomposicao_em_tokens(s: String) -> Vec<String> {
       } else {
          /* injeta a sequência alfabetica. */
          let mut tk = String::new();
-         while let Some(e) = f_n.pop_front() 
+         while let Some(e) = f_n.pop_front()
             { tk.push(e); }
          if tk != ""
             { tokens.push(tk); }
@@ -125,21 +132,21 @@ fn decomposicao_em_tokens(s: String) -> Vec<String> {
       } else {
          // o oposto, injeta a sequência numérica.
          let mut tk = String::new();
-         while let Some(e) = f_a.pop_front() 
+         while let Some(e) = f_a.pop_front()
             { tk.push(e); }
          if tk != ""
             { tokens.push(tk); }
       }
    }
-   /* despejando o resto, já que ele não é 
+   /* despejando o resto, já que ele não é
     * colocado, pois acaba antes da troca de
-    * símbolos se disparada, aliás, não haverá 
+    * símbolos se disparada, aliás, não haverá
     * disparo pois acabou. */
    if !f_n.is_empty()
       { tokens.push(f_n.drain(..).collect::<String>()); }
    if !f_a.is_empty()
       { tokens.push(f_a.drain(..).collect::<String>()); }
-   /* não aceita nada extraído, dado que a 
+   /* não aceita nada extraído, dado que a
     * string é válida. */
    assert!(!tokens.is_empty());
    return tokens;
@@ -160,12 +167,12 @@ fn validade(decomposicao: &Vec<String>) -> bool {
    /* verificam se uma string é "inteiramente"
     * numérica, ou texto(seria o peso). */
    let str_e_numero: fn(&str) -> bool = {
-      |string: &str| 
+      |string: &str|
          string.chars()
          .all(|c| c.is_ascii_digit() || c == '.')
    };
    let str_e_peso: fn(&str) -> bool = {
-      |string: &str| 
+      |string: &str|
          string.chars()
          .all(|c| c.is_ascii_alphabetic())
    };
@@ -180,11 +187,11 @@ fn validade(decomposicao: &Vec<String>) -> bool {
    );
 
    /* testando se a ordem dos pares batem,
-    * primeiro a parte numérica, depois o 
+    * primeiro a parte numérica, depois o
     * seu peso(seg, min, dias e etc.). */
    while i < t-1 {
       let (str1, str2) = (
-         decomposicao[i].as_str(), 
+         decomposicao[i].as_str(),
          decomposicao[i + 1].as_str()
       );
       if !str_e_numero(str1) || !str_e_peso(str2)
@@ -206,12 +213,12 @@ fn validade(decomposicao: &Vec<String>) -> bool {
 
 use std::time::Duration;
 /* converte finalmente a array do 'output' numa
- * expiração, que será um 'Duration'. 
+ * expiração, que será um 'Duration'.
  * É exigido que há array tenha valores numéricos
  * e pesos válidos, ou o velho caso: GIGO(garbage in,
  * then garbage out). */
 fn transforma_em_validade(array: Vec<String>) -> Duration {
-   /* mapeando o equivalente de cada 'peso' 
+   /* mapeando o equivalente de cada 'peso'
     * em segundos. */
    let pesos: HashMap<&str, f32> = {
       HashMap::from([
@@ -255,16 +262,16 @@ fn transforma_em_validade(array: Vec<String>) -> Duration {
    Duration::from_secs_f32(segundos)
 }
 
-/* O primeiro campo é o nome da extensão, já 
- * o segundo, a quantia total de tempo que 
+/* O primeiro campo é o nome da extensão, já
+ * o segundo, a quantia total de tempo que
  * é para conometrar até sua exclusão. */
 type Validades = Vec<(String, Duration)>;
 const TIPO_DE_ARQUIVOS: &str = "Tipos De Arquivos";
-/* filtra um específico cabeçalho, que é 
+/* filtra um específico cabeçalho, que é
  * o 'tipo de arquivos', para que dê o tempo
- * de validade para exclusão deste tipo de 
+ * de validade para exclusão deste tipo de
  * arquivo no arquivo `RAIZ`. Ele já pega
- * o tempo que tal 'tipo' específica e já 
+ * o tempo que tal 'tipo' específica e já
  * transforma numa 'Validade'.  */
 fn tipos_de_arquivos() -> Validades {
    // filtrando todo conteúdo do arquivo com elas.
@@ -277,12 +284,12 @@ fn tipos_de_arquivos() -> Validades {
    /* tem que ter a chave, assim com ela não pode
     * está sem nada, caso contrário o programa
     * irá parar. */
-   if !mapa.contains_key(&chave) 
+   if !mapa.contains_key(&chave)
       { panic!("cabeçalho '{}' não existe no arquivo", chave); }
    if mapa.get(&chave).unwrap().is_empty()
       { panic!("cabeçalho sem conteúdo"); }
    /* percorre linhas, reparti elas baseado na
-    * "igualdade", então pega o devido nome, e 
+    * "igualdade", então pega o devido nome, e
     * o tempo de expiração deste "tipo". */
    for linha in mapa.get_mut(&chave).unwrap().drain(..) {
       let (nome, resto) = linha.split_once(':').unwrap();
@@ -302,7 +309,7 @@ fn tipos_de_arquivos() -> Validades {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-mod tests { 
+mod tests {
    use super::*;
 
    // transforma string para algo aceitáel para função.
@@ -315,8 +322,8 @@ mod tests {
    fn decomposicaoTesteInicial() {
       // retirando qualquer espaço em branco.
       let amostra = ajusta_string("10hora 52min 18segundos");
-      assert_eq!( 
-         vec!["10", "hora", "52", "min", 
+      assert_eq!(
+         vec!["10", "hora", "52", "min",
          "18", "segundos"],
          decomposicao_em_tokens(dbg!(amostra))
       );
@@ -352,7 +359,7 @@ mod tests {
           * o valor do peso. */
          "21 horas 38min", "18min 33 segundos",
          "12 horas 27 minutos 48 segundos",
-         /* casos iguais os acima, porém com 
+         /* casos iguais os acima, porém com
           * algo a mais, valores numéricos com
           * apenas um dígito. */
          "14h8seg", "1hora 2 minutos", "56 min 2 seg",
@@ -361,12 +368,12 @@ mod tests {
       let mut saidas = vec![
          vec!["35", "minutos", "13", "segundos"],
          vec!["13", "dias", "13", "horas"],
-         vec!["14", "dias", "10", "horas", "28", 
+         vec!["14", "dias", "10", "horas", "28",
          "minutos", "56", "seg"],
          vec!["56", "minutos"],
          vec!["21", "horas", "38", "min"],
          vec!["18", "min", "33", "segundos"],
-         vec!["12", "horas", "27", "minutos", 
+         vec!["12", "horas", "27", "minutos",
          "48", "segundos"],
          vec!["14", "h", "8", "seg"],
          vec!["1", "hora", "2", "minutos"],
@@ -374,10 +381,10 @@ mod tests {
       ];
       let decompoem: fn(String) -> Vec<String>;
       decompoem = decomposicao_em_tokens;
-      for (e, s) in entradas.drain(..).zip(saidas.drain(..)) { 
+      for (e, s) in entradas.drain(..).zip(saidas.drain(..)) {
          let e = ajusta_string(e);
          println!("'{}' == {:?}", e, s);
-         assert_eq!(decompoem(e), s); 
+         assert_eq!(decompoem(e), s);
       }
    }
 
@@ -388,8 +395,8 @@ mod tests {
       let entrada = ajusta("10.38hora 52.7min 18segundos");
       let saida = decomposicao_em_tokens(entrada.clone());
       println!("'{}' #===> {:?}", entrada, saida);
-      assert_eq!( 
-         vec!["10.38", "hora", "52.7", "min", 
+      assert_eq!(
+         vec!["10.38", "hora", "52.7", "min",
          "18", "segundos"], saida
       );
       let entrada = ajusta("12.3min 53.1seg");
@@ -417,10 +424,10 @@ mod tests {
          Duration::from_secs_f32(35.0 * 60.0 + 13.0),
          //vec!["13", "dias", "13", "horas"],
          Duration::from_secs_f32(
-            13.0 * 24.0 * 3600.0 
+            13.0 * 24.0 * 3600.0
             + 13.0*3600.0
          ),
-         /*vec!["14", "dias", "10", "horas", "28", 
+         /*vec!["14", "dias", "10", "horas", "28",
          "minutos", "56", "seg"], */
          Duration::from_secs_f32(
             14.0 * 24.0 * 3600.0 + 10.0 * 3600.0
@@ -432,7 +439,7 @@ mod tests {
          Duration::from_secs_f32(21.0 * 3600.0 + 38.0 * 60.0),
          //vec!["18", "min", "33", "segundos"],
          Duration::from_secs_f32(18.0 * 60.0 + 33.0),
-         /*vec!["12", "horas", "27", "minutos", 
+         /*vec!["12", "horas", "27", "minutos",
          "48", "segundos"], */
          Duration::from_secs_f32(12.0 * 3600.0 + 27.0 * 60.0 + 48.0),
          // vec!["14", "h", "8", "seg"],
@@ -446,11 +453,11 @@ mod tests {
       let transforma: fn(Vec<String>) -> Duration;
       transforma = transforma_em_validade;
       decompoem = decomposicao_em_tokens;
-      for (e, s) in entradas.drain(..).zip(saidas.drain(..)) { 
+      for (e, s) in entradas.drain(..).zip(saidas.drain(..)) {
          let A = decompoem(ajusta_string(e));
          let entrada = transforma(A.clone());
          println!(
-            "{:?}'{:#?}' #===> {:#?}", 
+            "{:?}'{:#?}' #===> {:#?}",
             A, entrada.clone(), s.clone()
          );
          assert_eq!(entrada, s);
@@ -461,19 +468,19 @@ mod tests {
    #[test]
    fn tiposDeArquivosFiltroVisual() {
       let saida = tipos_de_arquivos();
-      for (nome, expiracao) in saida { 
+      for (nome, expiracao) in saida {
          println!(
-            "{} ==> {:#?}({})", 
-            nome, expiracao.clone(), 
+            "{} ==> {:#?}({})",
+            nome, expiracao.clone(),
             Tempo(expiracao.as_secs(), true)
-         ); 
+         );
       }
    }
-   /* cópia da função principal, espefíca para 
+   /* cópia da função principal, espefíca para
     * testes. Recebe o arquivo principal, que não
-    * está inserida na função para fazer uma 
+    * está inserida na função para fazer uma
     * variedade de testes. */
-   fn tipos_de_arquivos_teste<P>(caminho: &P) -> Validades 
+   fn tipos_de_arquivos_teste<P>(caminho: &P) -> Validades
      where P: AsRef<Path> + ?Sized
    {
       // filtrando todo conteúdo do arquivo com elas.
@@ -485,12 +492,12 @@ mod tests {
       /* tem que ter a chave, assim com ela não pode
        * está sem nada, caso contrário o programa
        * irá parar. */
-      if !mapa.contains_key(&chave) 
+      if !mapa.contains_key(&chave)
          { panic!("cabeçalho '{}' não existe no arquivo", chave); }
       if mapa.get(&chave).unwrap().is_empty()
          { panic!("cabeçalho sem conteúdo"); }
       /* percorre linhas, reparti elas baseado na
-       * "igualdade", então pega o devido nome, e 
+       * "igualdade", então pega o devido nome, e
        * o tempo de expiração deste "tipo". */
       for linha in mapa.get_mut(&chave).unwrap().drain(..) {
          let (nome, resto) = linha.split_once(':').unwrap();
@@ -506,7 +513,7 @@ mod tests {
       }
       return validades;
    }
-   
+
    #[test]
    #[should_panic="cabeçalho sem conteúdo"]
    fn tiposDeArquivosSemConteudo() {
@@ -514,14 +521,14 @@ mod tests {
          "src/item_de_exclusao/testes",
          "/configuração_sem_conteúdo.conf"
       );
-      tipos_de_arquivos_teste(caminho_str); 
+      tipos_de_arquivos_teste(caminho_str);
    }
 
    #[test]
    #[should_panic="cabeçalho 'Tipos De Arquivos' não existe no arquivo"]
    fn tiposDeArquivosSemCabecalho() {
       tipos_de_arquivos_teste(
-         concat!( 
+         concat!(
             "src/item_de_exclusao/testes",
             "/configuração_sem_cabeçalho.conf"
          )

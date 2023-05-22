@@ -11,9 +11,9 @@ fn computa_caminho(caminho_str:&str) -> PathBuf {
    match current_exe() {
       Ok(mut base) => {
          // remove executável do caminho.
-         base.pop(); 
+         base.pop();
          // sai do subdiretório 'release'.
-         base.pop(); 
+         base.pop();
          // sai do subdiretório 'target'.
          base.pop();
          // complementa com o caminho passado.
@@ -38,30 +38,30 @@ pub fn linka_executaveis(nome: &str) {
    nome_debug.push_str("_debug");
    let ld_debug_link = computa_caminho(nome_debug.as_str());
 
-   if ld_link.as_path().exists() && 
+   if ld_link.as_path().exists() &&
    ld_link.as_path().is_symlink() {
-      if executavel.as_path().exists() 
+      if executavel.as_path().exists()
          { println!("binário do executável existe."); }
    } else {
       print!("criando '{}' ... ", nome);
       match symlink(executavel.as_path(), ld_link.as_path()) {
          Ok(_) => {
             println!("com sucesso.");
-         } Err(_) => 
+         } Err(_) =>
             { println!("executável não existe!"); }
       };
    }
 
-   if ld_debug_link.as_path().exists() && 
-   ld_link.as_path().is_symlink() { 
-      if executavel_debug.exists() 
+   if ld_debug_link.as_path().exists() &&
+   ld_link.as_path().is_symlink() {
+      if executavel_debug.exists()
          { println!("binário do executável(DEBUG) existe."); }
    } else {
       print!("criando '{}'(debug) ... ", nome_debug);
       match symlink(executavel_debug.as_path(), ld_debug_link.as_path()) {
          Ok(_) => {
             println!("com sucesso.");
-         } Err(_) => 
+         } Err(_) =>
             { println!("executável não existe!"); }
       };
    }
