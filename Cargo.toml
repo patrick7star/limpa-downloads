@@ -1,6 +1,6 @@
 [package]
 name = "limpa_downloads"
-version = "0.3.4"
+version = "0.4.0"
 edition = "2021"
 license = "mit"
 
@@ -8,6 +8,9 @@ license = "mit"
 utilitarios = { path = "libs/rust-utilitarios", version="1.4.2" }
 #utilitarios = { path = "libs/utilitarios_antigo", version = "0.4.2" }
 pancurses = "0.17.0"
+
+[dev-dependencies]
+sysinfo = "0.29.8"
 
 [profile.dev]
 opt-level = 1
