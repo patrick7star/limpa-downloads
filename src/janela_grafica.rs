@@ -53,10 +53,8 @@ pub trait DropGrafico {
    fn drop(&mut self, janela:&Window);
 }
 
-
-/* string específica do `Item` e extrai sua
- * porcentagem, que fica geralmente no final.
- * Retorna tal valor como um float. */
+/* string específica do `Item` e extrai sua porcentagem, que fica 
+ * geralmente no final. Retorna tal valor como um float. */
 fn extrai_percentual(item_str:&str) -> f32 {
    // tamanho da string.
    let tamanho = item_str.len();
@@ -98,8 +96,8 @@ fn item_visualizacao(janela:&Window, item:&Item) {
    janela.addnstr(item_str.get(f..).unwrap(), item_str.len() - f);
 }
 
-/* função pega uma slice-string e imprime-a 
- * centralizando-a baseado no seu tamanho. */
+/* função pega uma slice-string e imprime-a centralizando-a baseado no 
+ * seu tamanho. */
 fn cabecalho<'a>(string:&'a str, janela:&Window, cor:i16) {
    // quantia de caractéres da string.
    let tamanho:i32 = string.len() as i32;
@@ -165,9 +163,10 @@ proximas_exclusao:&mut Vec<Item>) {
       { item_visualizacao(&janela, item); }
 }
 
-/* Implementando métodos privados que complementam
- * o método público "visualizar", porque é sempre 
- * bom tem um código mais limpo e organizado. */
+/* Implementando métodos privados que complementam o método público 
+ * "visualizar", porque é sempre bom tem um código mais limpo e 
+ * organizado. 
+ */
 impl FilaExclusao {
    /* pondo 'Item's que estão prestes a 
     * ser deletados, na fila de exclusão.
@@ -215,12 +214,9 @@ impl FilaExclusao {
    }
 }
 
-/* mostra o contador do tempo restante de 
- * exibição do programa gráfico. */
-fn escreve_temporizador(
-  janela: &Window, 
-  contador: &mut Temporizador
-) {
+// mostra o contador do tempo restante de exibição do programa gráfico.
+fn escreve_temporizador( janela: &Window, contador: &mut Temporizador) 
+{
    // converte de milisegundos para segundos.
    let t = contador.decorrido_seg();
    // contagem regressiva.
@@ -237,10 +233,10 @@ fn escreve_temporizador(
    );
 }
 
+use super::notificacoes;
 
 impl Grafico for FilaExclusao {
    fn visualiza(&mut self) { 
-      // janela padrão que se ajusta com o terminal.
       let mut janela = initscr();
 
       // configurando janela.
@@ -258,13 +254,11 @@ impl Grafico for FilaExclusao {
       init_pair(96, COLOR_CYAN, -1);
       init_pair(95, COLOR_RED, -1);
 
-      /* com nada, apenas plota notificação de
-       * que a interface não será lançada, pois 
-       * não há nada a excluir. */
+      /* com nada, apenas plota notificação de que a interface não será 
+       * lançada, pois não há nada a excluir. */
       if self.vazia() {
-         /* uma em cada dez, mostra a interface.
-          * não quero, por enquanto, desabilitar
-          * este antigo 'feature' por completo. */
+         /* uma em cada dez, mostra a interface. não quero, por 
+          * enquanto, desabilitar este antigo 'feature' por completo. */
          if sortear::u8(1..=10) == 5 {
             // imprime ambos tipos de listagens:
             escreve_listas(
@@ -279,7 +273,8 @@ impl Grafico for FilaExclusao {
          } else {
             // finalizando janela.
             endwin();
-            popup_notificacao("o diretório está completamente vázio");
+            // popup_notificacao("o diretório está completamente vázio");
+            notificacoes::avisa_de_diretorio_esta_vazio();
          } 
          // finalizando janela.
          endwin();
@@ -334,8 +329,7 @@ impl Grafico for FilaExclusao {
 
 // exclusão do ítem em sí.
 impl DropGrafico for Item {
-   /* apenas acaba se, e somente se, 
-    * o item expirou. */
+   /* apenas acaba se, e somente se, o item expirou. */
    fn drop(&mut self, janela:&Window) {
       if self.expirado() { 
          // movendo para linha debaixo ...
@@ -376,12 +370,11 @@ impl DropGrafico for Item {
    }
 }
 
-/* popup da mensagem específicada. */
+#[allow(dead_code)]
 fn popup_notificacao(mensagem: &str) {
    let icone = "--icon=trashcan_empty";
    let argumentos:[&str; 4] = [
       "--expire-time=25000",
-      //"--icon=object-rotate-left",
       icone,
       "--app-name=LimpaDownloads",
       mensagem
@@ -393,8 +386,7 @@ fn popup_notificacao(mensagem: &str) {
    .spawn().unwrap()
    .wait().unwrap();
 
-   /* mensagem dizendo o que foi feito, ou
-    * melhor, o que não foi. */
+   /* mensagem dizendo o que foi feito, ou melhor, o que não foi. */
    println!("{}, portanto nenhuma ação.", mensagem);
 }
 
