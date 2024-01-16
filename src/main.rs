@@ -1,8 +1,15 @@
 
 /**!
- Limpa os downloads antigos que podem
- "vencer" rapidamente, ou seja, não será
- utilizado mais.
+   Limpa os downloads antigos que podem "vencer" rapidamente, ou seja, 
+ não será utilizado mais.
+
+   O programa tem dois tipos de interfaces: a em modo-de-texto e uma
+ "semi-gráfica"(utilizando ncurses). Você pode acessar qualquer uma,
+ sendo a primeira apenas executando o programa em terminal, e a outra
+ com a opção '--ncurses'. Dentro desta segunda também tem a opção 
+ "lança janela", que desanexa a janela ncurses do atual terminal
+ chamado; para chamar tal opção use '--lanca-janela', é ótimo para 
+ executar tal programa de forma agendada.
 */
 
 // meus módulos:
@@ -88,9 +95,14 @@ fn main() {
    // lançando notificações sobre as operações realizadas.
    alerta_sobre_remocoes(&mut limpeza, total_inicial);
 
+   /* criando executáveis se não houver, apenas no Linux por enquanto.
+    * Claro que também leva em conta as diretivas de compilação, 
+    * especialmente para o modo-debug. */
    if cfg!(unix) {
-      // criando executáveis se não houver, apenas no Linux por enquanto.
-      links::linka_executaveis("LD");
+      if cfg!(debug_assertions)
+         { links::linka_executaveis("limpa-downloads-debug"); }
+      else
+         { links::linka_executaveis("limpa-downloads");}
    }
 }
 
