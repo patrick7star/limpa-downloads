@@ -10,7 +10,7 @@ utilitarios = { path = "libs/rust-utilitarios", version="1.4.2" }
 pancurses = "0.17.0"
 
 [dev-dependencies]
-sysinfo = "0.29.8"
+#sysinfo = "0.29.8"
 
 [profile.dev]
 opt-level = 1
