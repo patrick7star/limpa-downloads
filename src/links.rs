@@ -1,6 +1,7 @@
 
 /* cria link simbólico tanto para a versão em debug, quanto para o 
  * binário final. */
+#[cfg(target_os="unix")]
 use std::os::unix::fs::symlink;
 use std::env::current_exe;
 use std::path::PathBuf;
@@ -49,9 +50,14 @@ pub fn linka_executaveis(nome_do_linque: &str) {
       println!("{}", mensagem_i); 
    } else {
       print!("como não existe, criando '{}' ... ", nome_do_linque);
+      #[cfg(target_os="unix")]
       let resultado_criacao_do_link = symlink(
-         executavel.as_path(),
+         executavel.as_path(), 
          linque_otimizado.as_path()
+      );
+      #[cfg(target_os="windows")]
+       let resultado_criacao_do_link: Result <(), &str> = Err(
+          "[error]ainda não compatível com o Windows!!!"
       );
       match resultado_criacao_do_link {
          Ok(_) => {

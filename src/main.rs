@@ -23,7 +23,7 @@ mod tempo_tools;
 //mod configuracao;
 // #[allow(unused_imports)]
 // mod interface_grafica;
-#[allow(unused_imports)]
+// #[allow(unused_imports)]
 mod notificacoes;
 
 // biblioteca padrão do Rust:
@@ -103,6 +103,7 @@ fn main() {
          { links::linka_executaveis("limpa-downloads-debug"); }
       else
          { links::linka_executaveis("limpa-downloads");}
-   }
+   } else 
+      { println!("não existem criação de linques para Windows, ainda!"); }
 }
 
