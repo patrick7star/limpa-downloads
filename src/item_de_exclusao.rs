@@ -12,7 +12,7 @@ use std::string::String;
 
 // biblioteca externa:
 extern crate utilitarios;
-use utilitarios::barra_de_progresso::temporizador_progresso;
+use utilitarios::progresso::temporizador_progresso;
 use super::letreiro::Letreiro;
 
 // próprio módulo.
@@ -164,10 +164,7 @@ pub struct FilaExclusao {
 
 impl FilaExclusao {
    // constante contendo raíz do diretório análisado.
-   #[cfg(target_os="unix")]
    const RAIZ:&'static str = concat!(env!("HOME"), "/Downloads");
-   #[cfg(target_os="windows")]
-   const RAIZ:&'static str = concat!(env!("HOMEPATH"), "/Downloads");
 
    /// verifica se não há mais nada analisar e deletar.
    pub fn vazia(&self) -> bool { 

@@ -1,7 +1,7 @@
 
 extern crate utilitarios;
 use utilitarios::{
-   barra_de_progresso::temporizador_progresso,
+   progresso::temporizador_progresso,
    aleatorio::sortear
 };
 

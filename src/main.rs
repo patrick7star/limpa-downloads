@@ -12,20 +12,19 @@
  executar tal programa de forma agendada.
 */
 
-// meus módulos:
+// Módulos do programa.
 mod item_de_exclusao;
-use item_de_exclusao::FilaExclusao;
 mod janela_grafica;
-use janela_grafica::{Grafico};
 mod letreiro;
 mod links;
 mod tempo_tools;
 //mod configuracao;
-// #[allow(unused_imports)]
-// mod interface_grafica;
-// #[allow(unused_imports)]
+#[allow(unused_imports)]
 mod notificacoes;
 
+// Próprio módulos do projeto:
+use item_de_exclusao::FilaExclusao;
+use janela_grafica::{Grafico};
 // biblioteca padrão do Rust:
 use std::env::args;
 use std::process::Command;
@@ -103,7 +102,6 @@ fn main() {
          { links::linka_executaveis("limpa-downloads-debug"); }
       else
          { links::linka_executaveis("limpa-downloads");}
-   } else 
-      { println!("não existem criação de linques para Windows, ainda!"); }
+   }
 }
 
