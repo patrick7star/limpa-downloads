@@ -1,17 +1,19 @@
 [package]
 name = "limpa_downloads"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 license = "mit"
 
 [dependencies]
-utilitarios = { path = "libs/rust-utilitarios", version="1.4.2" }
-#utilitarios = { path = "libs/utilitarios_antigo", version = "0.4.2" }
 pancurses = "0.17.0"
 
-[dev-dependencies]
-#sysinfo = "0.29.8"
+[target.'cfg(debug_assertions)'.dependencies]
+sysinfo = "0.29.8"
+utilitarios = { path="../rust-utilitarios/" }
 
 [profile.dev]
-opt-level = 1
+opt-level = 0
+
+[profile.release]
+opt-level = 3
 
