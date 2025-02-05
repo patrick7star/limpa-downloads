@@ -1,45 +1,40 @@
-
-/**!
- Um trabalho especial com a geração de
- 'Item's e remoção do mesmo, que
- contém subdiretórios e arquivos lá
- dentro.
+/*! Um trabalho especial com a geração de 'Item's e remoção do mesmo, que
+ contém subdiretórios e arquivos lá dentro.
 */
 
-// biblioteca padrão:
+// Biblioteca padrão:
 use std::fs::{remove_dir, remove_file};
 use std::path::Path;
 use std::fmt::Debug;
 
 
-pub fn remocao_completa<P>(caminho:&P)
+pub fn remocao_completa<P>(caminho:&P) 
   where P: AsRef<Path> + ?Sized + Debug
 {
    let entradas = caminho.as_ref().read_dir().unwrap();
    for entrada in  entradas {
-      let x = entrada.unwrap().path();
-      if x.as_path().is_symlink()
+      let x = entrada.unwrap().path(); 
+      if x.as_path().is_symlink() 
          { eprintln!("{:#?} é um link simbólico!", x); }
-      else if x.as_path().is_file() {
+      else if x.as_path().is_file() { 
          let nome = x.as_path().file_name().unwrap();
-         eprint!("removendo {:#?}...", nome);
+         eprint!("removendo {:#?}...", nome); 
          match remove_file(x) {
-            Ok(_) =>
+            Ok(_) => 
                { eprintln!("feito!"); }
             Err(_) =>
                { eprintln!("ALGO DEU ERRADO!"); }
          };
-      } else if x.as_path().is_dir() {
+      } else if x.as_path().is_dir() { 
          // chamando função de modo recursivo ...
          remocao_completa(x.as_path());
-         /* excluindo arquivos do diretório e
-          * talvez subdiretórios, então apaga
-          * o diretório. */
+         /* Excluindo arquivos do diretório e talvez subdiretórios, então 
+          * apaga o diretório. */
          print!("removendo [{:#?}] ...", x.as_path());
          match remove_dir(x.as_path()) {
-            Ok(_) =>
+            Ok(_) => 
                { eprintln!("feito!"); }
-            Err(_) =>
+            Err(_) => 
                { eprintln!(""); }
          };
       }
@@ -47,14 +42,14 @@ pub fn remocao_completa<P>(caminho:&P)
    // removendo diretório "raíz" passado.
    eprint!("removendo [{:#?}] ...", caminho);
    match remove_dir(caminho) {
-      Ok(_) =>
+      Ok(_) => 
          { eprintln!("feito!"); }
-      Err(_) =>
+      Err(_) => 
          { eprintln!("ALGO DEU ERRADO!!!"); }
    };
 }
 
-fn auxiliar_amd<P>(caminho:&P, tm:&mut f32, ctd:&mut f32)
+fn auxiliar_amd<P>(caminho:&P, tm:&mut f32, ctd:&mut f32) 
   where P: AsRef<Path> + ?Sized
 {
    *ctd += 1.0;
@@ -66,10 +61,10 @@ fn auxiliar_amd<P>(caminho:&P, tm:&mut f32, ctd:&mut f32)
       } Err(_) => 0.0
    };
    for entrada in caminho.as_ref().read_dir().unwrap() {
-      let x = entrada.unwrap().path();
+      let x = entrada.unwrap().path(); 
       if x.as_path().is_symlink()
          { continue; }
-      else if x.as_path().is_file() {
+      else if x.as_path().is_file() { 
          *tm += {
             match x.as_path().metadata() {
                Ok(metadados) => {
@@ -83,7 +78,7 @@ fn auxiliar_amd<P>(caminho:&P, tm:&mut f32, ctd:&mut f32)
             }
          };
          *ctd += 1.0;
-      } else if x.as_path().is_dir()
+      } else if x.as_path().is_dir() 
          { auxiliar_amd(x.as_path(), tm, ctd); }
    }
 }
@@ -93,12 +88,13 @@ pub fn acesso_medio_dir<P>(caminho:&P) -> f32
 {
    let mut tempo: f32 = 0.0;
    let mut contador: f32 = 0.0;
+
    auxiliar_amd(caminho, &mut tempo, &mut contador);
-   return tempo / contador;
+   tempo / contador
 }
 
 #[allow(dead_code)]
-pub fn diretorio_vazio<P>(caminho: &P) -> bool
+pub fn diretorio_vazio<P>(caminho: &P) -> bool 
   where P: AsRef<Path> + ?Sized
 {
    let mut contador = 0;
@@ -122,10 +118,10 @@ fn auxiliar_tmd(caminho:&Path, tm:&mut f32, ctd:&mut f32) {
       } Err(_) => 0.0
    };
    for entrada in caminho.read_dir().unwrap() {
-      let entrada = entrada.unwrap().path();
+      let entrada = entrada.unwrap().path(); 
       if entrada.is_symlink()
          { continue; }
-      else if entrada.as_path().is_file() {
+      else if entrada.as_path().is_file() { 
          *tm += {
             match &entrada.metadata() {
                Ok(metadados) => {
@@ -137,7 +133,7 @@ fn auxiliar_tmd(caminho:&Path, tm:&mut f32, ctd:&mut f32) {
             }
          };
          *ctd += 1.0;
-      } else if entrada.as_path().is_dir()
+      } else if entrada.as_path().is_dir() 
          { auxiliar_tmd(entrada.as_path(), tm, ctd); }
    }
 }
@@ -162,8 +158,7 @@ fn sem_arquivos(caminho: &Path, contador: &mut u8) {
       }
    } else if caminho.is_file() {
       // falseia conjutura.
-      if *contador <= u8::MAX-1
-         { *contador += 1; }
+      *contador += 1;
    } else {
       panic!("tipo não implementado, mas se não for arquivo então conta!");
    }
@@ -174,10 +169,10 @@ fn sem_arquivos(caminho: &Path, contador: &mut u8) {
  * vázio, por mais que haja vários diretórios
  * vázios internos, um dentro dos outros. */
 pub fn dir_sem_arquivos<P>(caminho: P) -> bool
-  where P: AsRef<Path>
-{
+  where P: AsRef<Path> 
+{ 
    let mut contador = 0;
-   sem_arquivos(caminho.as_ref(), &mut contador);
+   sem_arquivos(caminho.as_ref(), &mut contador); 
    /* se contabilizar, no mínimo um arquivo, então
     * o diretório não é composto apenas de diretórios
     * vázios. */
@@ -193,11 +188,7 @@ mod tests {
       arvore::arvore
    };
    use std::path::Path;
-   use super::{
-      remove_dir, acesso_medio_dir,
-      remocao_completa, diretorio_vazio,
-      tempo_de_criacao_medio, dir_sem_arquivos
-   };
+   use super::*;
    use std::fs::create_dir;
    use std::env::temp_dir;
    use std::process::Command;
@@ -208,16 +199,16 @@ mod tests {
    fn testa_rc() {
       // descompactando diretório de teste ...
       let mut comando: Command = Command::new("/usr/bin/unzip");
-      comando.arg("./src/item_de_exclusao/testaRC.zip");
+      comando.arg("./src/item_de_exclusao/testaRC.zip"); 
       comando.arg("-d");
       comando.arg("/tmp");
       println!("{:#?}", comando);
       let msg_ok = "descompactou \"diretório teste\"";
       let msg_erro = "sem descompactar, não possível continuar o teste.";
       match comando.spawn() {
-         Ok(mut processo) => {
+         Ok(mut processo) => { 
             processo.wait().expect("o comando falhou!!");
-            println!("{}", msg_ok);
+            println!("{}", msg_ok); 
          }
          Err(erro) => { panic!("{}{}", msg_erro, erro); }
       };
@@ -240,7 +231,6 @@ mod tests {
    }
 
    #[test]
-   #[cfg(target_os="linux")]
    fn testa_amd() {
       let caminho = Path::new(env!("RUST_CODES"));
       let t = acesso_medio_dir(caminho);
@@ -266,9 +256,8 @@ mod tests {
    use std::fs::read_dir;
    #[test]
    #[ignore="diretório tem que possuir os demais necessários"]
-   #[cfg(target_os="linux")]
    fn varrida_downloads() {
-      let caminho = concat!(env!("HOME"), "/Downloads" );
+      let caminho = concat!(env!("HOME"), "/Downloads");
       for entrada in read_dir(caminho).unwrap() {
          let entrada = entrada.unwrap();
          let caminho = entrada.path();
