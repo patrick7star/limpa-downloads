@@ -1,0 +1,27 @@
+{
+   "normal": {
+      "ttf": "32 min",
+      "deb":"40 minutos",
+      "zip":"4.6 horas",
+      "tar": "3.8 horas",
+      "gz": "3.2h",
+      "epub": "9.8 dias",
+      "djvu": "17.2min",
+      "dat": "7.2min",
+      "toml": "8.1min",
+      "pdf": "12d"
+   },
+
+   "debug": {
+      "ttf": "32 seg",
+      "deb":"4 minutos",
+      "zip":"4.6 min",
+      "tar": "3.8min",
+      "gz": "13.2 min",
+      "epub": "11.7 min",
+      "djvu": "40seg",
+      "dat": "300seg",
+      "toml": "31 segundos",
+      "pdf": "22 segundos"
+   }
+}
