@@ -1,10 +1,5 @@
-
-// próprio caixote.
-use std::io::Result as Output;
-
-use std::path::Path;
+// Biblioteca do Rust:
 use std::process::Command;
-use std::fs::{read, write, OpenOptions};
 use std::time::Duration;
 
 /* função que realmente puxa uma notificação do sistema, respeitado
@@ -33,7 +28,6 @@ fn popup_notificacao(nome: &str, icone: &str, duracao: Duration,
    Ok(())
 }
 
-use utilitarios::legivel::tempo as Tempo;
 /* faz uma notificação da atual transição aplicada ao sistema. */
 pub fn informa_n_itens_removidos(total: usize) {
    let mensagem = format!("foram deletados {} itens!", total);

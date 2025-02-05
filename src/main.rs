@@ -1,5 +1,4 @@
-
-/**!
+/*!
    Limpa os downloads antigos que podem "vencer" rapidamente, ou seja, 
  não será utilizado mais.
 
@@ -17,9 +16,7 @@ mod item_de_exclusao;
 mod janela_grafica;
 mod letreiro;
 mod links;
-mod tempo_tools;
 //mod configuracao;
-#[allow(unused_imports)]
 mod notificacoes;
 
 // Próprio módulos do projeto:

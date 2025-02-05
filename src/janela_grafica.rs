@@ -1,13 +1,11 @@
-
-/**! 
- Gera a parte de visualização com uma biblioteca
- semi-gráfica `ncurses`. Que é o mesmo que a
- impressão no `stdout`, porém de forma dinâmica 
- e animada. 
+/**! Gera a parte de visualização com uma biblioteca semi-gráfica `ncurses`. 
+ Que é o mesmo que a impressão no `stdout`, porém de forma dinâmica e 
+ animada. 
 */
 
-// biblioteca externa:
 extern crate pancurses;
+extern crate utilitarios;
+// Biblioteca externa:
 use pancurses::{ 
    endwin, napms, initscr, 
    noecho, curs_set, start_color, 
@@ -16,29 +14,26 @@ use pancurses::{
    COLOR_RED, COLOR_YELLOW, COLOR_CYAN, 
    A_NORMAL, A_UNDERLINE, A_BOLD
 };
-extern crate utilitarios;
 use utilitarios::{
    impressao::circunscrever,
    legivel::tempo,
    aleatorio::sortear
 };
-
-// minha biblioteca:
+// Minha biblioteca:
 use crate::item_de_exclusao::{Item, FilaExclusao};
 use super::letreiro::StringDinamica;
-use super::tempo_tools::Temporizador;
-
-// biblioteca padrão do Rust:
-use std::time::Duration;
+use super::notificacoes;
+// Biblioteca padrão do Rust:
+use std::time::{Duration, Instant};
 use std::str::FromStr;
 use std::process::Command;
 
 // ID's de todas paletas de cores criadas e utilizadas:
-static LONGE:i16 = 99;
-static PERTO:i16 = 98;
-static MEDIO:i16 = 97;
-static LI_COR:i16 = 96;
-static LEH_COR:i16 = 95;
+static LONGE: i16    = 99;
+static PERTO: i16    = 98;
+static MEDIO: i16    = 97;
+static LI_COR: i16   = 96;
+static LEH_COR: i16  = 95;
 
 
 pub trait Grafico {
@@ -215,14 +210,17 @@ impl FilaExclusao {
 }
 
 // mostra o contador do tempo restante de exibição do programa gráfico.
-fn escreve_temporizador( janela: &Window, contador: &mut Temporizador) 
+fn escreve_temporizador
+  (janela: &Window, todo: Duration, contador: &Instant) 
 {
    // converte de milisegundos para segundos.
-   let t = contador.decorrido_seg();
+   // let t = contador.decorrido_seg();
    // contagem regressiva.
-   let r = contador.meta()-t;
-   let tempo_str = tempo(r, true);
+   // let r = contador.meta()-t;
+   let r = todo - contador.elapsed();
+   let tempo_str = tempo(r.as_secs(), true);
    let c = tempo_str.len() as i32;
+
    // desenha na janela referênciada.
    janela.mvaddstr(
       // coordenadas Y e X:
@@ -233,26 +231,33 @@ fn escreve_temporizador( janela: &Window, contador: &mut Temporizador)
    );
 }
 
-use super::notificacoes;
+fn configuracao_da_janela_principal(janela: &Window) {
+   // configurando janela.
+   noecho();
+   curs_set(0);
+   start_color();
+   use_default_colors();
+   janela.keypad(true);
+   janela.timeout(400);
+}
+
+fn iniciando_todas_paletas_de_cores() {
+   // paleta de cores:
+   init_pair(99, COLOR_GREEN, -1);
+   init_pair(98, COLOR_RED, -1);
+   init_pair(97, COLOR_YELLOW, -1);
+   init_pair(96, COLOR_CYAN, -1);
+   init_pair(95, COLOR_RED, -1);
+}
 
 impl Grafico for FilaExclusao {
    fn visualiza(&mut self) { 
       let mut janela = initscr();
-
-      // configurando janela.
-      noecho();
-      curs_set(0);
-      start_color();
-      use_default_colors();
-      janela.keypad(true);
-      janela.timeout(400);
-
-      // paleta de cores:
-      init_pair(99, COLOR_GREEN, -1);
-      init_pair(98, COLOR_RED, -1);
-      init_pair(97, COLOR_YELLOW, -1);
-      init_pair(96, COLOR_CYAN, -1);
-      init_pair(95, COLOR_RED, -1);
+      let duracao = Duration::from_secs(80);
+      let timer: Instant;
+      
+      configuracao_da_janela_principal(&janela);
+      iniciando_todas_paletas_de_cores();
 
       /* com nada, apenas plota notificação de que a interface não será 
        * lançada, pois não há nada a excluir. */
@@ -279,10 +284,8 @@ impl Grafico for FilaExclusao {
          // finalizando janela.
          endwin();
       }
+      timer = Instant::now();
 
-      // rodar ncurses até a fila esváziar.
-      let duracao = Duration::from_secs(80);
-      let mut timer = Temporizador::cria(duracao);
       while !self.vazia() {
          // reordena ítens de de ambas listas.
          self.reordenacao_dos_items();
@@ -290,8 +293,7 @@ impl Grafico for FilaExclusao {
          // apaga tudo já escrito na janela.
          janela.clear();
          // imprime ambos tipos de listagens:
-         escreve_listas(
-            &janela, 
+         escreve_listas( &janela, 
             &mut self.todos, 
             &mut self.proximas_exclusao
          );
@@ -309,20 +311,19 @@ impl Grafico for FilaExclusao {
          };
 
          if !self.ha_exclusao_hoje() {
-            escreve_temporizador(&janela, &mut timer);
+            // escreve_temporizador(&janela, &mut timer);
+            escreve_temporizador(&janela, duracao, &timer);
             // quebra loop se o temporizador "se esgota".
-            if *timer { break; }
+            if timer.elapsed() > duracao { break; }
          }
 
-         // atualiza nova escrita.
+         // Atualiza nova escrita, e deleta ítems que expiraram recentemente.
          janela.refresh(); 
-         // deleta ítems que expiraram recentemente.
          janela = self.limpa_items_expirados(janela);
 
          // a cadá tanto milisegundos.
          napms(500);
       }
-      // terminal tal janela.
       endwin();
    }
 }
