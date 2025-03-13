@@ -1,27 +1,28 @@
 {
-   "normal": {
-      "ttf": "32 min",
-      "deb":"40 minutos",
-      "zip":"4.6 horas",
-      "tar": "3.8 horas",
-      "gz": "3.2h",
-      "epub": "9.8 dias",
-      "djvu": "17.2min",
-      "dat": "7.2min",
-      "toml": "8.1min",
-      "pdf": "12d"
-   },
+   "zip":  ["4.6 horas", "4.6min"],
+   "tar":  ["3.8 horas", "3.8min"],
+   "gz":   ["3.2h", "13.2min"],
 
-   "debug": {
-      "ttf": "32 seg",
-      "deb":"4 minutos",
-      "zip":"4.6 min",
-      "tar": "3.8min",
-      "gz": "13.2 min",
-      "epub": "11.7 min",
-      "djvu": "40seg",
-      "dat": "300seg",
-      "toml": "31 segundos",
-      "pdf": "22 segundos"
-   }
+   "ttf":  ["32 min", "32 seg"],
+   "iso":  ["3 dias", "2min"],
+   "torrent":  ["45min", "30seg"],
+
+   "dat":  ["7.2min", "300seg"],
+   "data":  ["7.2min", "300seg"],
+   "deb":  ["40 minutos", "4 minutos"],
+   "json": ["1.7h", "1.2min"],
+   "toml": ["8.1min", "31 segundos"],
+   "sh":   ["37min", "25seg"],
+
+   "epub": ["9.8 dias", "11.7 min"],
+   "djvu": ["17.2min", "40seg"],
+   "pdf":  ["12d", "8min"],
+
+   "mp4":  ["6h", "3min"],
+   "mp3":  ["8h", "3.5 min"],
+   "mkv":  ["10h", "4.1 min"],
+
+   "png":  ["1.4h", "1.2min"],
+   "jpeg": ["2h", "1.4min"],
+   "gif":  ["54min", "54seg"]
 }

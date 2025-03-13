@@ -1,15 +1,19 @@
 [package]
 name = "limpa_downloads"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 license = "mit"
+rust-version = "1.60"
 
 [dependencies]
 pancurses = "0.17.0"
+serde_json= "1.0"
 
 [target.'cfg(debug_assertions)'.dependencies]
-sysinfo = "0.29.8"
-utilitarios = { path="../rust-utilitarios/" }
+#utilitarios = { path="../rust-utilitarios/" }
+
+[dev-dependencies]
+serde_json= "1.0"
 
 [profile.dev]
 opt-level = 0
