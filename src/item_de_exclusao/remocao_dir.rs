@@ -93,63 +93,10 @@ pub fn acesso_medio_dir<P>(caminho:&P) -> f32
    tempo / contador
 }
 
-#[allow(dead_code)]
-pub fn diretorio_vazio<P>(caminho: &P) -> bool 
-  where P: AsRef<Path> + ?Sized
-{
-   let mut contador = 0;
-   match caminho.as_ref().read_dir() {
-      Ok(entradas) => {
-         for _ in entradas
-            { contador += 1; }
-      } Err(_) => ()
-   };
-   return contador == 0;
-}
-
-#[allow(unused)]
-fn auxiliar_tmd(caminho:&Path, tm:&mut f32, ctd:&mut f32) {
-   *ctd += 1.0;
-   *tm += match caminho.metadata() {
-      Ok(metadados) => {
-         metadados.created()
-         .unwrap().elapsed()
-         .unwrap().as_secs_f32()
-      } Err(_) => 0.0
-   };
-   for entrada in caminho.read_dir().unwrap() {
-      let entrada = entrada.unwrap().path(); 
-      if entrada.is_symlink()
-         { continue; }
-      else if entrada.as_path().is_file() { 
-         *tm += {
-            match &entrada.metadata() {
-               Ok(metadados) => {
-                  metadados
-                  .created().unwrap()
-                  .elapsed().unwrap()
-                  .as_secs_f32()
-               } Err(_) => 0.0
-            }
-         };
-         *ctd += 1.0;
-      } else if entrada.as_path().is_dir() 
-         { auxiliar_tmd(entrada.as_path(), tm, ctd); }
-   }
-}
-#[allow(unused)]
-pub fn tempo_de_criacao_medio<P>(caminho: &P) -> f32
-  where P: AsRef<Path> + ?Sized
-{
-   let mut tempo: f32 = 0.0;
-   let mut contador: f32 = 0.0;
-   auxiliar_tmd(caminho.as_ref(), &mut tempo, &mut contador);
-   return tempo / contador;
-}
-
-/* desconsidera diretórios dentro de diretórios,
+/* Desconsidera diretórios dentro de diretórios,
  * só retorna 'falso', se e somente se, um
  * arquivo, ou "variantes" dele forem encontrados. */
+#[allow(dead_code)]
 fn sem_arquivos(caminho: &Path, contador: &mut u8) {
    if caminho.is_dir() {
       for e in caminho.read_dir().unwrap() {
@@ -168,6 +115,7 @@ fn sem_arquivos(caminho: &Path, contador: &mut u8) {
  * nada, então será apenas considerado como
  * vázio, por mais que haja vários diretórios
  * vázios internos, um dentro dos outros. */
+#[allow(dead_code)]
 pub fn dir_sem_arquivos<P>(caminho: P) -> bool
   where P: AsRef<Path> 
 { 
@@ -189,11 +137,9 @@ mod tests {
    };
    use std::path::Path;
    use super::*;
-   use std::fs::create_dir;
+   use std::fs::{remove_dir_all};
    use std::env::temp_dir;
    use std::process::Command;
-   use std::thread::sleep;
-   use std::time::Duration;
 
    #[test]
    fn testa_rc() {
@@ -239,40 +185,6 @@ mod tests {
       assert!(true);
    }
 
-   #[test]
-   #[allow(non_snake_case)]
-   fn testaDV() {
-      let caminho = temp_dir().as_path().join("DirTeste/");
-      println!("{}", caminho.as_path().display());
-      assert!(!caminho.exists());
-      create_dir(caminho.as_path()).unwrap();
-      assert!(caminho.exists());
-      sleep(Duration::from_secs(5));
-      assert!(diretorio_vazio(caminho.as_path()));
-      remove_dir(caminho.as_path()).unwrap();
-      assert!(!caminho.as_path().exists());
-   }
-
-   use std::fs::read_dir;
-   #[test]
-   #[ignore="diretório tem que possuir os demais necessários"]
-   fn varrida_downloads() {
-      let caminho = concat!(env!("HOME"), "/Downloads");
-      for entrada in read_dir(caminho).unwrap() {
-         let entrada = entrada.unwrap();
-         let caminho = entrada.path();
-         let nome = &caminho.file_name().unwrap().to_str().unwrap();
-         let ta = acesso_medio_dir(&caminho);
-         let tc = tempo_de_criacao_medio(&caminho);
-         println!(
-            "'{}'\n\túltimo acesso: {}\n\ttempo desde criação:{}",
-            nome, tempo(ta as u64, true),
-            tempo(tc as u64, true)
-         );
-      }
-   }
-
-   use std::fs::remove_dir_all;
    #[test]
    #[allow(non_snake_case)]
    fn diretorioVazio() {
