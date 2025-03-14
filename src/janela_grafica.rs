@@ -5,35 +5,32 @@
 
 extern crate pancurses;
 extern crate utilitarios;
+
 // Biblioteca externa:
 use pancurses::{ 
-   endwin, napms, initscr, 
-   noecho, curs_set, start_color, 
-   init_pair, use_default_colors, 
-   Input, Window, COLOR_GREEN,
-   COLOR_RED, COLOR_YELLOW, COLOR_CYAN, 
-   A_NORMAL, A_UNDERLINE, A_BOLD
+   endwin, napms, initscr, noecho, curs_set, start_color, init_pair, 
+   use_default_colors, Input, Window, COLOR_GREEN, COLOR_RED, COLOR_YELLOW, 
+   COLOR_CYAN, A_NORMAL, A_UNDERLINE, A_BOLD
 };
 use utilitarios::{
    impressao::circunscrever,
    legivel::tempo,
    aleatorio::sortear
 };
-// Minha biblioteca:
+// Módulos do próprio projeto:
 use crate::item_de_exclusao::{Item, FilaExclusao};
 use super::letreiro::StringDinamica;
 use super::notificacoes;
 // Biblioteca padrão do Rust:
 use std::time::{Duration, Instant};
 use std::str::FromStr;
-use std::process::Command;
 
 // ID's de todas paletas de cores criadas e utilizadas:
-static LONGE: i16    = 99;
-static PERTO: i16    = 98;
-static MEDIO: i16    = 97;
-static LI_COR: i16   = 96;
-static LEH_COR: i16  = 95;
+static LONGE:     i16  = 99;
+static PERTO:     i16  = 98;
+static MEDIO:     i16  = 97;
+static LI_COR:    i16  = 96;
+static LEH_COR:   i16  = 95;
 
 
 pub trait Grafico {
@@ -68,30 +65,29 @@ fn extrai_percentual(item_str:&str) -> f32 {
 fn item_visualizacao(janela:&Window, item:&Item) {
    // próxima linha ...
    let l = janela.get_cur_y() + 1;
-   janela.mv(l, 0);
-   //let item_str = &item.to_string();
-   let item_str: &String = &StringDinamica::to_string(item.clone());
+   let item_str: &String = &StringDinamica::to_string(item);
    let i = item_str.rfind("[").unwrap();
    let f = item_str.rfind("]").unwrap();
-   janela.addnstr(item_str, i+1); 
-   janela.attrset(A_BOLD);
    let percentual = extrai_percentual(item_str.as_str());
-   if percentual >= 15.0 && percentual < 50.0 {
-      janela.color_set(MEDIO);
-   }
-   else if percentual < 15.0 {
-      janela.color_set(PERTO);
-   }
-   else {
-      janela.color_set(LONGE);
-   }
+
+   janela.mv(l, 0);
+   janela.addnstr(item_str, i + 1); 
+   janela.attrset(A_BOLD);
+
+   if percentual >= 15.0 && percentual < 50.0 
+      { janela.color_set(MEDIO); }
+   else if percentual < 15.0 
+      { janela.color_set(PERTO); }
+   else 
+      { janela.color_set(LONGE); }
+
    janela.addnstr(item_str.get(i+1..).unwrap(), f-i-1);
    janela.attroff(A_BOLD);
    janela.color_set(0);
    janela.addnstr(item_str.get(f..).unwrap(), item_str.len() - f);
 }
 
-/* função pega uma slice-string e imprime-a centralizando-a baseado no 
+/* Função pega uma slice-string e imprime-a centralizando-a baseado no 
  * seu tamanho. */
 fn cabecalho<'a>(string:&'a str, janela:&Window, cor:i16) {
    // quantia de caractéres da string.
@@ -115,8 +111,9 @@ fn cabecalho<'a>(string:&'a str, janela:&Window, cor:i16) {
    janela.mv(janela.get_cur_y() + 1, 0);
 }
 
-fn escreve_listas(janela:&Window, todos:&mut Vec<Item>,
-proximas_exclusao:&mut Vec<Item>) {
+fn escreve_listas
+ (janela:&Window, todos:&mut Vec<Item>, proximas_exclusao:&mut Vec<Item>) 
+{
    // primeira lista:
    cabecalho("lista de items", janela, LI_COR);
    // mensagem em caso de está parte da lista está vázia.
@@ -213,20 +210,19 @@ impl FilaExclusao {
 fn escreve_temporizador
   (janela: &Window, todo: Duration, contador: &Instant) 
 {
-   // converte de milisegundos para segundos.
-   // let t = contador.decorrido_seg();
-   // contagem regressiva.
-   // let r = contador.meta()-t;
-   let r = todo - contador.elapsed();
+   // Contagem regressiva.
+   let zero = Duration::new(0, 0);
+   // let r = todo - contador.elapsed();
+   let r = todo.checked_sub(contador.elapsed()).unwrap_or(zero);
    let tempo_str = tempo(r.as_secs(), true);
    let c = tempo_str.len() as i32;
 
    // desenha na janela referênciada.
    janela.mvaddstr(
-      // coordenadas Y e X:
+      // Coordenadas Y e X:
       janela.get_max_y() - 2,
       janela.get_max_x() - (c + 3),
-      // texto formatado e "traduzido".
+      // Texto formatado e "traduzido".
       tempo_str.as_str()
    );
 }
@@ -250,7 +246,8 @@ fn iniciando_todas_paletas_de_cores() {
    init_pair(95, COLOR_RED, -1);
 }
 
-impl Grafico for FilaExclusao {
+impl Grafico for FilaExclusao 
+{
    fn visualiza(&mut self) { 
       let mut janela = initscr();
       let duracao = Duration::from_secs(80);
@@ -259,7 +256,7 @@ impl Grafico for FilaExclusao {
       configuracao_da_janela_principal(&janela);
       iniciando_todas_paletas_de_cores();
 
-      /* com nada, apenas plota notificação de que a interface não será 
+      /* Com nada, apenas plota notificação de que a interface não será 
        * lançada, pois não há nada a excluir. */
       if self.vazia() {
          /* uma em cada dez, mostra a interface. não quero, por 
@@ -273,26 +270,23 @@ impl Grafico for FilaExclusao {
             );
             // mostra resultado novo da tela.
             janela.refresh();
-            // três segundos e meio de espera.
             napms(3_500);
-         } else {
-            // finalizando janela.
             endwin();
-            // popup_notificacao("o diretório está completamente vázio");
+         } else {
+            /* Finaliza a parte gráfica e lança uma notificação informando
+             * a situação sem itens para deletar. */
+            endwin();
             notificacoes::avisa_de_diretorio_esta_vazio();
          } 
-         // finalizando janela.
-         endwin();
       }
       timer = Instant::now();
 
       while !self.vazia() {
          // reordena ítens de de ambas listas.
          self.reordenacao_dos_items();
-         // visualizando lista de todos 'Item's.
-         // apaga tudo já escrito na janela.
-         janela.clear();
-         // imprime ambos tipos de listagens:
+         /* Visualizando lista de todos 'Item's. Apaga tudo já escrito na 
+          * janela. Imprime ambos tipos de listagens: */
+         janela.erase();
          escreve_listas( &janela, 
             &mut self.todos, 
             &mut self.proximas_exclusao
@@ -311,7 +305,6 @@ impl Grafico for FilaExclusao {
          };
 
          if !self.ha_exclusao_hoje() {
-            // escreve_temporizador(&janela, &mut timer);
             escreve_temporizador(&janela, duracao, &timer);
             // quebra loop se o temporizador "se esgota".
             if timer.elapsed() > duracao { break; }
@@ -340,8 +333,6 @@ impl DropGrafico for Item {
 
          // nome da string de forma mais conveniênte.
          let nome:String = {
-            //let lt = janela.get_max_x();
-            //let c:i32 = self.nome.len() as i32 + 19;
             let (lt, c):(i32, i32) = (
                janela.get_max_x(),
                (self.nome.len() as i32) + 19
@@ -366,31 +357,10 @@ impl DropGrafico for Item {
          janela.refresh();
 
          // deletando arquivos e restos em sí.
-         drop(self);
+         let _= self;
       }
    }
 }
-
-#[allow(dead_code)]
-fn popup_notificacao(mensagem: &str) {
-   let icone = "--icon=trashcan_empty";
-   let argumentos:[&str; 4] = [
-      "--expire-time=25000",
-      icone,
-      "--app-name=LimpaDownloads",
-      mensagem
-   ];
-
-   // executando comando ...
-   Command::new("notify-send")
-   .args(argumentos.into_iter())
-   .spawn().unwrap()
-   .wait().unwrap();
-
-   /* mensagem dizendo o que foi feito, ou melhor, o que não foi. */
-   println!("{}, portanto nenhuma ação.", mensagem);
-}
-
 
 #[cfg(test)]
 mod tests {

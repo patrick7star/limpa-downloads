@@ -53,54 +53,55 @@ fn cria_linques_no_repositorio(nome_do_linque: &str) -> io::Result<PathBuf>
    let destino = Path::new(&caminho_repositorio).join(nome_do_linque);
    let bate = Component::Normal(OsStr::new("release"));
 
-   // Verificação se estamos falando apenas da parte 'release'.
-   assert!(fonte.components().any(|part| part == bate));
-   println!("fonte: {:?}\ndestino: {:?}", fonte, destino);
+   if cfg!(debug_assertions)
+      { println!("fonte: {:?}\ndestino: {:?}", fonte, destino); }
+   
+   // Verificação se estamos nos referindo apenas da parte 'release'.
+   if fonte.components().any(|part| part == bate) {
+      symlink(fonte, &destino)?;
+      Ok(destino)
+   } else
+      { Err(io::ErrorKind::Unsupported.into()) }
+}
+
+fn cria_linques_locais(nome_do_linque: &str) -> io::Result<PathBuf>
+{
+   let (fonte, destino): (PathBuf,PathBuf);
+
+   // Seleção baseado no tipo de optimização na compilação:
+   if cfg!(debug_assertions) 
+   {
+      let novo_nome = format!("{}-debug", nome_do_linque);
+      fonte = computa_caminho("target/debug/limpa_downloads");
+      destino = computa_caminho(&novo_nome);
+
+   } else {
+      fonte = computa_caminho("target/release/limpa_downloads");
+      destino = computa_caminho(nome_do_linque);
+   }
+
+   // Escolhe a criação do linque, baseado no tipo de execução aplicada.
    symlink(fonte, &destino)?;
+   // Retorno do linque que acabou de ser criado.
    Ok(destino)
 }
 
-pub fn linka_executaveis(nome_do_linque: &str) {
-   let caminho_ao_executavel;
-   let mensagem_i: &str;
-
-   // seleção baseado no tipo de optimização na compilação:
-   if cfg!(debug_assertions) {
-      caminho_ao_executavel = "target/debug/limpa_downloads";
-      mensagem_i = "linque do executável(debug) já existe.";
-   } else {
-      caminho_ao_executavel = "target/release/limpa_downloads";
-      mensagem_i = "linque do executável já existe.";
-   }
-
-   // caminho aos executáveis.
-   let executavel = computa_caminho(caminho_ao_executavel);
-   // caminho do linque para o executável.
-   let linque_otimizado = computa_caminho(nome_do_linque);
-
-   // criação do linque para o executável otimizado.
-   if linque_otimizado.exists() {
-      // println!("linque do executável já existe."); 
-      println!("{}", mensagem_i); 
-   } else {
-      print!("como não existe, criando '{}' ... ", nome_do_linque);
-      #[cfg(target_os="linux")]
-      let resultado_criacao_do_link = symlink(
-         executavel.as_path(), 
-         linque_otimizado.as_path()
-      );
-      #[cfg(target_os="windows")]
-       let resultado_criacao_do_link: Result <(), &str> = Err(
-          "[error]ainda não compatível com o Windows!!!"
-      );
-      match resultado_criacao_do_link {
-         Ok(_) => {
-            println!("com sucesso.");
-         } Err(_) => { 
-            println!("erro ao tentar criar linque!!!");
-         }
-      };
-   }
+pub fn linka_executaveis(nome_do_linque: &str) 
+{
+   match cria_linques_locais(nome_do_linque) {
+      Ok(_) => 
+         { println!("O linque local foi criado com sucesso."); }
+      Err(erro) => match erro.kind() {
+         io::ErrorKind::AlreadyExists => {
+            if cfg!(debug_assertions)
+               { println!("Já existe um linque local do 'modo debug'."); }
+            else 
+               { println!("Já existe um linque local."); }
+         } _ =>
+         // Demais erros ainda não tratados.
+            { panic!("{}", erro); }
+      }
+   };
 
    match cria_linques_no_repositorio(nome_do_linque) {
       Ok(caminho) => { 
@@ -110,6 +111,8 @@ pub fn linka_executaveis(nome_do_linque: &str) {
          match classificacao_do_erro.kind() {
             io::ErrorKind::AlreadyExists =>
                { println!("Já existe um linque em $LINKS."); }
+            io::ErrorKind::Unsupported =>
+               { println!("Versão 'debug' não cria linque do repositório.");}
             _ =>
                { panic!("{}", classificacao_do_erro); }
          }

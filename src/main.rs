@@ -74,7 +74,7 @@ fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
       ]);
 
       comando.spawn().unwrap().wait().unwrap();
-      println!("abriu uma nova janela para execução do programa.");
+      println!("Abriu uma nova janela para execução do programa.");
    }
    else 
       /* padrão, apenas mostra lista de exclusão de hoje, e deleta já 
@@ -88,17 +88,9 @@ fn main() {
    let total_inicial = limpeza.total();
 
    tipo_de_visualizacao(&mut limpeza);
-   // lançando notificações sobre as operações realizadas.
+   // Lançando notificações sobre as operações realizadas.
    alerta_sobre_remocoes(&mut limpeza, total_inicial);
-
-   /* criando executáveis se não houver, apenas no Linux por enquanto.
-    * Claro que também leva em conta as diretivas de compilação, 
-    * especialmente para o modo-debug. */
-   if cfg!(unix) {
-      if cfg!(debug_assertions)
-         { links::linka_executaveis("limpa-downloads-debug"); }
-      else
-         { links::linka_executaveis("limpa-downloads");}
-   }
+   // Cria linques locais e no repositório específico pra eles.
+   links::linka_executaveis("limpa-downloads");
 }
 
