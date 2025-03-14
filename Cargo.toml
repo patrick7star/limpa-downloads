@@ -1,6 +1,6 @@
 [package]
 name = "limpa_downloads"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 license = "mit"
 rust-version = "1.60"
@@ -9,8 +9,9 @@ rust-version = "1.60"
 pancurses = "0.17.0"
 serde_json= "1.0"
 
+# Funciona apenas na máquina local. Use o makefile para compilar a versão release.
 [target.'cfg(debug_assertions)'.dependencies]
-#utilitarios = { path="../rust-utilitarios/" }
+utilitarios = { path="../rust-utilitarios/" }
 
 [dev-dependencies]
 serde_json= "1.0"
