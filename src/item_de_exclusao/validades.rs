@@ -10,11 +10,12 @@ use std::time::{Duration};
 use std::path::{Path};
 // Módulos/e submódulos do próprio projeto:
 use crate::item_de_exclusao::{diretorio_esta_vazio};
+use crate::links::{computa_caminho};
 
 type TipoJSON = Map<String, Value>;
 
 static mut TABELA_EXTENSOES: Option<TipoJSON> = None;
-const CAMINHO_JSON: &str = "definicoes.json";
+const NOME_CONFIG: &str = "definicoes.json";
 
 
 #[allow(static_mut_refs)]
@@ -26,7 +27,8 @@ fn carrega_dicionario_com_definicoes() -> TipoJSON {
          { return TABELA_EXTENSOES.clone().unwrap().clone() }; 
    }
 
-   let arquivo = File::open(CAMINHO_JSON).unwrap(); 
+   let caminho = computa_caminho(NOME_CONFIG);
+   let arquivo = File::open(caminho).unwrap(); 
    let objeto = Deserializer::from_reader(arquivo); 
 
    for primeira_entrada in objeto.into_iter::<TipoJSON>() { 
@@ -130,7 +132,8 @@ mod tests {
 
    #[test]
    fn carrega_definicoes_de_validades() {
-      let arquivo = File::open(CAMINHO_JSON).unwrap(); 
+      let caminho = computa_caminho(NOME_CONFIG);
+      let arquivo = File::open(caminho).unwrap(); 
       let objeto = Deserializer::from_reader(arquivo); 
 
       for entry in objeto.into_iter::<TipoJSON>() { 
