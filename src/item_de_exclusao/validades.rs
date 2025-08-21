@@ -122,13 +122,21 @@ pub fn duracao_para_devida_extensao_por_json(extension: &str) -> Duration {
 }
 
 // Computa duração para um diretório, seja qual for seu estado.
+#[allow(non_snake_case)]
 pub fn duracao_para_diretorio(caminho: &Path) -> Duration {
-   const DIA: f32 = 24.0 * 3600.0;
-   const ALGUNS_DIAS:u64 = (DIA * 13.9) as u64;
+   const DIR_VAZIA: u64 = 5 * 60;
+   let DIA: f32;
+   let ALGUNS_DIAS: u64;
+
+   if cfg!(debug_assertions) 
+      { DIA = 60.0; } 
+   else 
+      { DIA = 24.0 * 3600.0; }
+   ALGUNS_DIAS = (DIA * 13.9) as u64;
 
    // criando o ítem e adicionando na lista.
    if diretorio_esta_vazio(caminho)
-      { Duration::from_secs(5 * 60) }
+      { Duration::from_secs(DIR_VAZIA) }
    else 
       { Duration::from_secs(ALGUNS_DIAS) }
 }
