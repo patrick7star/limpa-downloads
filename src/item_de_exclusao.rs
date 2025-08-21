@@ -10,6 +10,7 @@ use std::ops::Drop;
 use std::fs::{remove_dir, remove_file, read_dir};
 use std::fmt::{ Display, Formatter, Result as Formato };
 use std::string::String;
+use std::cmp::{Eq, PartialEq};
 // Módulos destes projeto:
 use remocao_dir::{ self as RD, };
 use super::letreiro::Letreiro;
@@ -26,6 +27,9 @@ use utilitarios::legivel::{tamanho_legivel, tempo_legivel_duration};
 trait DropPadrao 
    { fn drop(&mut self); }
 
+/* === === ===  === === === === === === === === === === === === === === ====
+ *	                        Modelação do Item 
+ * === === ===  === === === === === === === === === === === === === === == */
 /** Elememento com dados e, principalmente dada de exclusão.  */
 pub struct Item {
    // caminho para o item.
@@ -47,7 +51,8 @@ pub struct Item {
 impl Item {
    // cria instância.
    pub fn cria(caminho:PathBuf, ultimo_acesso: SystemTime, 
-   validade:Duration) -> Self {
+     validade: Duration) -> Self 
+   {
       // extraí nomes do caminho.
       let nome:String = {
          caminho.as_path().file_name().unwrap().to_str().unwrap()
@@ -121,6 +126,13 @@ impl Item {
    }
 }
 
+impl PartialEq for Item {
+   fn eq(&self, rhv: &Self) -> bool
+      { self.caminho == rhv.caminho }
+}
+// Ambos se complementam, ou seja, não apague 'Eq'.
+impl Eq for Item{}
+
 // impressão sobre o status do ítem.
 impl Display for Item {
 
@@ -166,6 +178,9 @@ impl DropPadrao for Item {
    }
 }
 
+/* === === ===  === === === === === === === === === === === === === === ====
+ *	                  Fila de Exclusão de Itens	
+ * === === ===  === === === === === === === === === === === === === === == */
 pub struct FilaExclusao {
    // todos ítens da raíz dada.
    pub todos: Vec<Item>,
@@ -257,7 +272,6 @@ impl FilaExclusao {
          // Caso geral: um arquivo com extensão.
          if let Some(os_str) = caminho.extension() {
             if let Some(ext) = os_str.to_str() {
-               // let validade = Self::duracao_para_devida_extensao(ext);
                let validade = duracao_para_devida_extensao_por_json(ext);
 
                if let Ok(ua) = entry.metadata().unwrap().accessed()

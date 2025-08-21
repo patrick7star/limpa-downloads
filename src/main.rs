@@ -53,18 +53,23 @@ fn alerta_sobre_remocoes(obj: &mut FilaExclusao, total_inicial: usize)
 // seleção do modo gráfico/ou não de visualizar este programa.
 fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
    if args().any(|s| s == "--ncurses")
-      // neste caso inicializa o "ncurses"...
-      { Grafico::visualiza(objeto); }
-   /* para encurtar o comando no agendador 'cron', portanto não será 
+      // Neste caso inicializa o "ncurses"...
+      { Grafico::visualiza_certeza(objeto); }
+   else if args().any(|s| s == "--agil")
+   /* Pode ou não inicializar o 'ncurses', na verdade a probabilidade é 10%.
+    * Tal função serve como agilidade. Às vezes não há o que excluir, então
+    * ao invés de lançar aa interface gráfica, apenas índica, via notificação
+    * que não há conteúdo há visualizar. 
+    */
+      { Grafico::visualiza_provavel(objeto); }
+   else if args().any(|s| s == "--lanca-janela") {
+   /* Para encurtar o comando no agendador 'cron', portanto não será 
     * mais preciso escrever o comando do emulador de terminal, para 
     * lançar o comando propriamente. */
-   else if args().any(|s| s == "--lanca-janela") {
-      // caminho do executável.
-      // let funcao: fn(&str) -> PathBuf = links::computa_caminho;
       let funcao: fn(_) -> PathBuf = links::computa_caminho;
       let caminho_exe = funcao("target/debug/limpa_downloads");
       let executavel = format!("{} --ncurses", caminho_exe.display());
-      /* criando comando para lança o programa na interface do ncurses 
+      /* Criando comando para lança o programa na interface do ncurses 
       numa nova janela. */
       let mut comando = Command::new("mate-terminal");
 
