@@ -41,3 +41,5 @@ touch amostra_vi/teste.b.data
 
 mkdir amostra_vii/
 
+mv -v /tmp/pasta-testes $HOME/Downloads
+
