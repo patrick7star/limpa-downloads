@@ -28,6 +28,7 @@ fn carrega_dicionario_com_definicoes() -> TipoJSON {
    }
 
    let caminho = computa_caminho(NOME_CONFIG);
+   println!("{}", caminho.display());
    let arquivo = File::open(caminho).unwrap(); 
    let objeto = Deserializer::from_reader(arquivo); 
 
@@ -108,7 +109,14 @@ pub fn duracao_para_devida_extensao(extension: &str) -> Duration {
  * extensões que não deseja. */
 pub fn duracao_para_devida_extensao_por_json(extension: &str) -> Duration {
    let definicoes = carrega_dicionario_com_definicoes();
-   let valor = unwrap_such_value_array(definicoes[extension].clone());
+   let valor: String;
+   const PADRAO: &str = "20min";
+
+   /* Quaquer uma que não existe, pega um simples valor padrão de 20 min. */
+   if let Some(escolha) = definicoes.get(extension) 
+      { valor = unwrap_such_value_array(escolha.clone()); }
+   else
+      { valor = String::from(PADRAO); }
 
    interpleta_string_de_tempo(&valor).unwrap()
 }
@@ -130,10 +138,11 @@ pub fn duracao_para_diretorio(caminho: &Path) -> Duration {
 mod tests {
    use super::*;
 
+
    #[test]
    fn carrega_definicoes_de_validades() {
       let caminho = computa_caminho(NOME_CONFIG);
-      let arquivo = File::open(caminho).unwrap(); 
+      let arquivo = File::open(&caminho).unwrap(); 
       let objeto = Deserializer::from_reader(arquivo); 
 
       for entry in objeto.into_iter::<TipoJSON>() { 
@@ -153,5 +162,4 @@ mod tests {
          println!("{} - {:?}", chave, dicio[chave]);
       }
    }
-
 }

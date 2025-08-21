@@ -132,7 +132,7 @@ pub fn dir_sem_arquivos<P>(caminho: P) -> bool
 mod tests {
    extern crate utilitarios;
    use utilitarios::{
-      legivel::tempo,
+      legivel::tempo_legivel_decimal,
       arvore::arvore
    };
    use std::path::Path;
@@ -180,7 +180,8 @@ mod tests {
    fn testa_amd() {
       let caminho = Path::new(env!("RUST_CODES"));
       let t = acesso_medio_dir(caminho);
-      println!("último acesso: {}", tempo(t as u64, true));
+      let traducao = tempo_legivel_decimal(t, true);
+      println!("último acesso: {}", traducao.unwrap());
       // avaliação manual.
       assert!(true);
    }
