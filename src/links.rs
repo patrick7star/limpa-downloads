@@ -4,9 +4,8 @@
 #[cfg(target_os="linux")]
 use std::os::unix::fs::symlink;
 use std::env::current_exe;
-use std::path::PathBuf;
 use std::ffi::{OsStr};
-use std::path::{Path, Component};
+use std::path::{Path, Component, PathBuf};
 use std::env::{var, VarError};
 use std::io;
 
@@ -14,7 +13,8 @@ use std::io;
 /// Computa o caminho até o projeto, baseado que, tal executável deve está
 /// no lugar comum onde uma simples compilação do Rust o faz se não for 
 /// definida diferente. Portanto em algum subdiretório do diretório 'target'.
-pub fn computa_caminho(caminho_str:&str) -> PathBuf {
+#[allow(dead_code)]
+pub fn computa_caminho_i(caminho_str:&str) -> PathBuf {
    match current_exe() {
    // à partir do caminho do executável ...
       Ok(mut base) => {
@@ -31,6 +31,23 @@ pub fn computa_caminho(caminho_str:&str) -> PathBuf {
          { panic!("não foi possível obter o caminho do executável!"); }
    }
 }
+
+/* Computa o caminho do diretório do projeto, então anexa o resto do caminho
+ * dado. Entretanto, é um método diferente do que já tem deste tipo de 
+ * função aqui. */
+pub fn computa_caminho<P: AsRef<Path>>(complemento: P) -> PathBuf {
+   let mut caminho = current_exe().unwrap();
+   const PROJETO: &str = "limpa-downloads";
+   let bate = OsStr::new(PROJETO);
+   let mut base = caminho.file_name();
+
+   while base != Some(&bate) { 
+      caminho.pop(); 
+      base = caminho.file_name();
+   }
+   caminho.join(complemento)
+}
+
 
 fn cria_linques_no_repositorio(nome_do_linque: &str) -> io::Result<PathBuf> 
 {

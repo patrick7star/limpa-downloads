@@ -13,12 +13,12 @@ use std::string::String;
 // Módulos destes projeto:
 use remocao_dir::{ self as RD, };
 use super::letreiro::Letreiro;
-use validades::*;
-// Biblioteca externa:
-use utilitarios::legivel::{
-   tamanho as tamanho_legivel, 
-   tempo as tempo_legivel
+use validades::{
+   duracao_para_devida_extensao_por_json, 
+   duracao_para_diretorio
 };
+// Biblioteca externa:
+use utilitarios::legivel::{tamanho_legivel, tempo_legivel_duration};
 
 
 /* Trait para re-implementação do Drop com "saída" na tela. Está versão é 
@@ -46,7 +46,7 @@ pub struct Item {
 
 impl Item {
    // cria instância.
-   pub fn cria(caminho:PathBuf, ultimo_acesso:SystemTime, 
+   pub fn cria(caminho:PathBuf, ultimo_acesso: SystemTime, 
    validade:Duration) -> Self {
       // extraí nomes do caminho.
       let nome:String = {
@@ -59,7 +59,7 @@ impl Item {
       Item { caminho, nome, validade, ultimo_acesso, letreiro}
    }
 
-   // verifica se o item já expirou.
+   /// Verifica se o item já expirou.
    pub fn expirado(&mut self) -> bool {
       /* movimenta letreiro aqui, pois será chamado bem frequentemente 
        * neste bloco. */
@@ -94,6 +94,31 @@ impl Item {
       }
       else { Duration::from_secs(0) }
    }
+
+   /* Parte de métodos privadas auxiliares na implementação do Display no
+    * 'Item'. */
+   fn duracao_transcorrida(&self) -> String {
+      let inicio = match self.ultimo_acesso.elapsed() {
+         Ok(ultimo_acesso) => ultimo_acesso,
+         Err(estimativa) => estimativa.duration()
+      };
+      let decorrido = self.validade - inicio;
+
+      tempo_legivel_duration(decorrido, true)
+   }
+
+   fn percentual_restante(&self) -> f32 {
+      let inicio = match self.ultimo_acesso.elapsed() {
+         Ok(ultimo_acesso) => ultimo_acesso,
+         Err(estimativa) => estimativa.duration()
+      };
+      let decorrido = self.validade - inicio;
+      // Cálculo do percentual pra exclusão.
+      let a = decorrido.as_secs_f32();
+      let b = self.validade.as_secs_f32();
+
+      (1.0 - a / b) * 100.0
+   }
 }
 
 // impressão sobre o status do ítem.
@@ -101,22 +126,13 @@ impl Display for Item {
 
    fn fmt(&self, formatador:&mut Formatter<'_>) -> Formato 
    {
-      let inicio = match self.ultimo_acesso.elapsed() {
-         Ok(ultimo_acesso) => ultimo_acesso,
-         Err(estimativa) => estimativa.duration()
-      };
-      let decorrido = self.validade - inicio;
-      let restante = tempo_legivel(decorrido.as_secs(), true);
-      // Cálculo do percentual pra exclusão.
-      let a = decorrido.as_secs_f32();
-      let b = self.validade.as_secs_f32();
-      let percentual = (1.0 - a / b) * 100.0;
       // Tamanho do objeto à excluir.
       let size = self.caminho.metadata().unwrap().len();
 
       write!(
          formatador, "{:<60}~ {3:<11}| {:<9}|{:6.1}%", 
-         self.nome, restante, percentual, tamanho_legivel(size, true)
+         self.nome, self.duracao_transcorrida(), self.percentual_restante(),
+         tamanho_legivel(size, true)
       )
    }
 }

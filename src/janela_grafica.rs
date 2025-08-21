@@ -14,7 +14,7 @@ use pancurses::{
 };
 use utilitarios::{
    impressao::circunscrever,
-   legivel::tempo,
+   legivel::tempo_legivel_duration,
    aleatorio::sortear
 };
 // Módulos do próprio projeto:
@@ -212,9 +212,8 @@ fn escreve_temporizador
 {
    // Contagem regressiva.
    let zero = Duration::new(0, 0);
-   // let r = todo - contador.elapsed();
    let r = todo.checked_sub(contador.elapsed()).unwrap_or(zero);
-   let tempo_str = tempo(r.as_secs(), true);
+   let tempo_str = tempo_legivel_duration(r, true);
    let c = tempo_str.len() as i32;
 
    // desenha na janela referênciada.

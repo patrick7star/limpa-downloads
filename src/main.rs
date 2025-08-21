@@ -60,19 +60,15 @@ fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
     * lançar o comando propriamente. */
    else if args().any(|s| s == "--lanca-janela") {
       // caminho do executável.
-      let funcao: fn(&str) -> PathBuf = links::computa_caminho;
+      // let funcao: fn(&str) -> PathBuf = links::computa_caminho;
+      let funcao: fn(_) -> PathBuf = links::computa_caminho;
       let caminho_exe = funcao("target/debug/limpa_downloads");
       let executavel = format!("{} --ncurses", caminho_exe.display());
       /* criando comando para lança o programa na interface do ncurses 
       numa nova janela. */
       let mut comando = Command::new("mate-terminal");
 
-      comando.args([
-         "--hide-menubar",
-         "--command",
-         executavel.as_str(),
-      ]);
-
+      comando.args(["--hide-menubar", "--command", executavel.as_str()]);
       comando.spawn().unwrap().wait().unwrap();
       println!("Abriu uma nova janela para execução do programa.");
    }
