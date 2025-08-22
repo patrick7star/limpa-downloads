@@ -15,6 +15,7 @@ import json, string, unittest
 from random import (randint)
 from pathlib import (Path)
 from os import (getenv)
+from multiprocessing import (Process)
 
 
 def gera_uma_string_aleatoria(n: int) -> str:
@@ -34,6 +35,10 @@ def gera_uma_string_aleatoria(n: int) -> str:
    return "".join(selecoes)
 
 def cria_arquivo_branco(caminho: Path, extensao: str) -> Path:
+   """
+   Cria um arquivo, dado o caminho, dada também a extensão. No fim, preenche
+   ele com uma quantia, arbitrariamente escolhida, com bytes zerados.
+   """
    assert (caminho.exists())   
    assert (extensao != "")
 
@@ -46,7 +51,7 @@ def cria_arquivo_branco(caminho: Path, extensao: str) -> Path:
 
    with open(pathname, "wb") as arquivo:
       for _ in range(quantia_aleatoria()):
-         arquivo.write(b'0')
+         arquivo.write(b'\0')
 
    print("'{}' gerado com sucesso em '{}'.".format(nome, caminho))
    return pathname
@@ -62,13 +67,40 @@ def geracao_aleatoria_de_varias_extensoes_em_definicoes() -> None:
             result = cria_arquivo_branco(destino, extensao)
          print("Finalizado.")
 
-class Unitarios(unittest.TestCase):
-   def amostras_de_strings_geradas_randomicamente(self):
+def gerador_aleatorio_de_varias_extensoes_paralelo() -> None:
+   destino = Path(getenv("HOME"), "Downloads") 
+   pool = []
+
+   with open("definicoes.json", "rt") as stream:
+      definicoes = json.load(stream) 
+
+      print("\nCriação dos arquivos com as devidas extensões ...\n")
+
+      for extensao in definicoes.keys():
+         funcao = cria_arquivo_branco
+         ID = Process(target=funcao, args=(destino, extensao))
+
+         ID.start()
+         pool.append(ID)
+
+      print("Todas criações lançadas em paralelo.")
+
+      for fio in pool:
+         fio.join(None)
+         print("Tarefa [%d] terminada com sucesso." % fio.pid)
+      print("Tudo foi executado conforme.")
+
+# === === ===  === === === === === === === === === === === === === === === ==
+#	                  Testes Unitários 
+# === === ===  === === === === === === === === === === === === === === === ==
+class AmostrasDeStringsGeradasRandomicamente(unittest.TestCase):
+   def runTest(self):
       for _ in range(10):
          t = randint(15, 30)
          print(gera_uma_string_aleatoria(t))
 
-   def criacao_de_arquivo_pra_determinada_extensao(self):
+class CriacaoDeArquivoPraDeterminadaExtensao(unittest.TestCase):
+   def runTest(self):
       destino = Path(getenv("HOME"), "Downloads") 
       extensoes = ["mp4", "pdf", "dat"]
       outputs = []
@@ -84,9 +116,20 @@ class Unitarios(unittest.TestCase):
          pathname.unlink()
          self.assertFalse(pathname.exists())
 
-   def geracaoAleatoriaDeVariasExtensoesEmDefinicoes(self):
+class GeracaoAleatoriaDeVariasExtensoesEmDefinicoes(unittest.TestCase):
+   def setUp(self):
+      self.outputs = []
+
+   def tearDown(self):
+      print("\nRemoção do que foi criado:")
+
+      for pathname in self.outputs:
+         pathname.unlink()
+         self.assertFalse(pathname.exists())
+         print('\t', pathname,"...", "removido.")
+
+   def runTest(self):
       destino = Path(getenv("HOME"), "Downloads") 
-      outputs = []
 
       with open("definicoes.json", "rt") as stream:
          definicoes = json.load(stream) 
@@ -94,14 +137,48 @@ class Unitarios(unittest.TestCase):
          print("Criação por iteração das extensões e suas validades:\n")
          for extensao in definicoes.keys():
             result = cria_arquivo_branco(destino, extensao)
-            outputs.append(result)
+            self.outputs.append(result)
 
-         print("\nRemoção do que foi criado:")
-         for pathname in outputs:
-            pathname.unlink()
-            self.assertFalse(pathname.exists())
-            print('\t', pathname,"...", "removido.")
+@unittest.skip("Tarefa consome o máximo de CPU e energia")
+class GeradorAleatorioDeVariasExtensoesParalelo (unittest.TestCase):
+   def runTest(self):
+      gerador_aleatorio_de_varias_extensoes_paralelo()
 
+# === === ===  === === === === === === === === === === === === === === === ==
+#	                   Execução do Programa
+# === === ===  === === === === === === === === === === === === === === === ==
+import getopt
+from sys import (argv as Argumentos)
+
+def manual_de_uso() -> None:
+   print("""
+   \rTodas opções que podem ser usadas no script.
+
+   --help\tEste manual de ajuda aqui mostrado.
+
+   --max\tPotência máxima ao gerar tais arquivos. Cuidado, esta
+        \topção pode realmente "congestionar" o computador, pois ele usa
+        \to máximo do CPU(todos cores).
+   """)
 
 if __name__ == "__main__":
-   geracao_aleatoria_de_varias_extensoes_em_definicoes()
+   filtrado = Argumentos[1:]
+   (menu, _) = getopt.getopt(filtrado, "mh:", ["max", "help"])
+
+   #geracao_aleatoria_de_varias_extensoes_em_definicoes()
+   if menu == []:
+      geracao_aleatoria_de_varias_extensoes_em_definicoes()
+
+   for (opcao, valor) in menu:
+      if opcao == "--help":
+         manual_de_uso()
+
+      elif opcao == "--max":
+         print(
+            "\nAtenção! Quase todo poder computacional da sua máquina "
+            + "cuidará desta tarefa. Algumas máquinas podem travar durante "
+            + "tal realização\n"
+         )
+         gerador_aleatorio_de_varias_extensoes_paralelo()
+
+
