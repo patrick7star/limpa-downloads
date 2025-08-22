@@ -5,7 +5,7 @@ mod validades;
 
 // Biblioteca padrão do Rust:
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, Duration};
+use std::time::{SystemTime, Duration, Instant};
 use std::ops::Drop;
 use std::fs::{remove_dir, remove_file, read_dir};
 use std::fmt::{ Display, Formatter, Result as Formato };
@@ -186,6 +186,9 @@ pub struct FilaExclusao {
    pub todos: Vec<Item>,
    // lista de exclusão nas próximas horas.
    pub proximas_exclusao: Vec<Item>,
+
+   // Tempo de uma nova varredura por itens.
+   relogio: Instant
 }
 
 impl FilaExclusao {
@@ -280,7 +283,10 @@ impl FilaExclusao {
          }
       }
       // criando instância em sí, já retornando ...
-      FilaExclusao { todos: lista, proximas_exclusao: Vec::new() }
+      FilaExclusao { 
+         todos: lista, proximas_exclusao: Vec::new(), 
+         relogio: Instant::now() 
+      }
    }
 
    /// Há algo na fila de "exclusão diária".
@@ -311,6 +317,64 @@ impl FilaExclusao {
       };
       // total de itens menos os expirados.
       contagem - desconto 
+   }
+
+   fn classificar(caminho: PathBuf) -> Option<Item> {
+      // No caso de se for um diretório.
+      if caminho.is_dir() {
+         let validade = duracao_para_diretorio(&caminho);
+         let auxiliar = SystemTime::now();
+         let ua_medio = RD::acesso_medio_dir(&caminho);
+         let tempo = Duration::from_secs(ua_medio as u64);
+         let ua = {
+            auxiliar.checked_add(tempo)
+            .expect("falha no ST do caminho passado!")
+         };
+
+         return Some(Item::cria(caminho, ua, validade))
+      }
+
+      // Caso geral: um arquivo com extensão.
+      if let Some(os_str) = caminho.extension() {
+         if let Some(ext) = os_str.to_str() {
+            let validade = duracao_para_devida_extensao_por_json(ext);
+
+            if let Ok(ua) = caminho.metadata().unwrap().accessed()
+               { return Some(Item::cria(caminho, ua, validade)); }
+         }
+      }
+      None
+   }
+
+   /// Insere na lista, entretanto, verifica se o 'Item' já não exsite.
+   fn insercao_controlada(&mut self, novo: Item) {
+      for item in self.todos.iter() {
+         if *item == novo { return (); }
+      }
+
+      for item in self.proximas_exclusao.iter() {
+         if *item == novo { return(); }
+      }
+      // Se chegou até aqui, apenas insere o novo item.
+      self.todos.push(novo);
+   }
+
+   /// Varredura por novos itens. Isso é pra quando o programa já está em
+   /// execução. Tal procedimento acontece de tempos em tempos, e não à 
+   /// cada chamada desta função.
+   pub fn varredura(&mut self) {
+      if self.relogio.elapsed() < Duration::from_secs(30) {
+         let mut entradas= read_dir(Self::RAIZ).unwrap();
+
+         // Analisando cada objeto no diretório "Downloads" ...
+         while let Some(Ok(entry)) = entradas.next() {
+            if let Some(item) = Self::classificar(entry.path())
+               { self.insercao_controlada(item); }
+         }
+         
+         // Resetando contagem.
+         self.relogio = Instant::now();
+      }
    }
 }
 

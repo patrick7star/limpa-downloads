@@ -272,7 +272,7 @@ impl FilaExclusao {
       const ESPACO: i32 = 2;
       
       if !self.proximas_exclusao.is_empty() { 
-         let quantia = self.proximas_exclusao.len();
+         let quantia = self.total();
          let formatacao = format!("Exclusao: {}", quantia);
 
          janela.mvaddstr(linha, 2, formatacao.as_str()); 
@@ -414,6 +414,8 @@ impl Grafico for FilaExclusao
       self.construcao_e_renderizacao(&janela, None, 3500);
 
       while !self.vazia() {
+         // Busca por novos itens em tempo de execução.
+         self.varredura();
          // Reordena ítens de de ambas listas.
          self.reordenacao_dos_items();
          /* Visualizando lista de todos 'Item's. Apaga tudo já escrito na 
