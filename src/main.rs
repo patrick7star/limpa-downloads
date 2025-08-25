@@ -24,7 +24,7 @@ use item_de_exclusao::FilaExclusao;
 use janela_grafica::{Grafico};
 // biblioteca padrão do Rust:
 use std::env::args;
-use std::process::Command;
+use std::process::{Command, exit};
 use std::path::PathBuf;
 use std::convert::TryInto;
 
@@ -83,7 +83,34 @@ fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
       { objeto.visualiza(); }
 }
 
+#[link(name="instancia", kind="static")]
+extern "C" {
+   pub fn ha_outra_instancia_em_execucacao() -> bool; 
+}
+
+
 fn main() {
+   /* Para imediatamente o programa, pois foi detectada uma instância deste
+    * programa em execução. Não permitir mais que uma é a melhor forma de 
+    * evitar qualquer conflito e comportamento indeterminado dos algoritmos
+    * internos deste programa. */
+   if unsafe { ha_outra_instancia_em_execucacao()  } { 
+      print!("Já há uma instância deste programa em execução!\n"); 
+      exit(99);
+   }
+
+   /* Nota: isso é uma parte temporária que foi posta apenas pra que alguns
+    * testes sejam realizados. Ou seja, será removido, e já está em vias
+    * de ser substituído. */
+   if cfg!(debug_assertions) { 
+      const N: u64 = 400;
+      let pausa = std::time::Duration::from_millis(N);
+
+      std::thread::sleep(pausa);
+      println!("Está no modo DEBUG"); 
+   }
+
+
    let mut limpeza = FilaExclusao::gera();
    // total de itens inicialmente, quando a fila é gerada.
    let total_inicial = limpeza.total();
