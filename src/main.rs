@@ -21,7 +21,7 @@ mod notificacoes;
 
 // Próprio módulos do projeto:
 use item_de_exclusao::FilaExclusao;
-use janela_grafica::{Grafico};
+use graficos::{Grafico};
 // biblioteca padrão do Rust:
 use std::env::args;
 use std::process::{Command, exit};
