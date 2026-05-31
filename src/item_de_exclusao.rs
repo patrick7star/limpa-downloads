@@ -1,4 +1,5 @@
 extern crate utilitarios;
+extern crate libc;
 
 mod remocao_dir;
 mod validades;
@@ -11,6 +12,10 @@ use std::fs::{remove_dir, remove_file, read_dir};
 use std::fmt::{ Display, Formatter, Result as Formato };
 use std::string::String;
 use std::cmp::{Eq, PartialEq};
+use std::env::{var};
+use std::mem::{zeroed};
+use std::ffi::{c_char};
+
 // Módulos destes projeto:
 use remocao_dir::{ self as RD, };
 use super::letreiro::Letreiro;
@@ -193,6 +198,7 @@ pub struct FilaExclusao {
 
 impl FilaExclusao {
    // constante contendo raíz do diretório análisado.
+   #[allow(dead_code)]
    const RAIZ:&'static str = concat!(env!("HOME"), "/Downloads");
 
    /// Verifica se não há mais nada analisar e deletar.
@@ -249,7 +255,8 @@ impl FilaExclusao {
    /// Gera itens baseado no diretório RAÍZ.
    pub fn gera() -> Self {
       let mut lista:Vec<Item> = Vec::new();
-      let mut todas_entradas = read_dir(Self::RAIZ).unwrap();
+      let raiz = caminho_da_raiz();
+      let mut todas_entradas = read_dir(&raiz).unwrap();
 
       // Analisando cada objeto no diretório "Downloads" ...
       while let Some(Ok(entry)) = todas_entradas.next() {
@@ -363,8 +370,10 @@ impl FilaExclusao {
    /// execução. Tal procedimento acontece de tempos em tempos, e não à 
    /// cada chamada desta função.
    pub fn varredura(&mut self) {
-      if self.relogio.elapsed() < Duration::from_secs(30) {
-         let mut entradas= read_dir(Self::RAIZ).unwrap();
+      if self.relogio.elapsed() < Duration::from_secs(30) 
+      {
+         let raiz = caminho_da_raiz();
+         let mut entradas= read_dir(&raiz).unwrap();
 
          // Analisando cada objeto no diretório "Downloads" ...
          while let Some(Ok(entry)) = entradas.next() {
@@ -386,4 +395,169 @@ fn diretorio_esta_vazio(caminho:&Path) -> bool {
    return true;
 }
 
+fn caminho_da_raiz() -> PathBuf {
+   if e_um_linux_wsl() 
+   {
+      let base = var("HOMEPATH").unwrap();      
+      let caminho = Path::new(&base).join(&"Downloads");
 
+      caminho.to_path_buf()
+   } else {
+      if let Ok(base) = var("HOME") 
+         { Path::new(&base).join("Downloads") }
+      else
+         { panic!("Não achado a fonte principal 'Downloads'."); }
+   }
+}
+
+fn e_um_linux_wsl() -> bool {
+   let mut buffer = unsafe { zeroed::<libc::utsname>() };
+   let endereco = &mut buffer as *mut libc::utsname;
+   let _= unsafe { libc::uname(endereco) };
+   let info = utsnamec_to_utsnamers(buffer);
+   // Proposições:
+   let kernel_linux = {
+      info.sysname == "Linux" ||
+      info.sysname == "GNU/Linux" || 
+      info.sysname.contains(&"Linux") ||
+      info.sysname.contains(&"linux") 
+   };
+   let forque_wsl = {
+      info.release.contains(&"microsoft") ||
+      info.release.contains(&"WSL2") || 
+      info.release.contains(&"WSL") 
+   };
+
+   kernel_linux && forque_wsl
+}
+
+#[allow(unused)]
+struct UtsNameRs {
+   sysname: String,
+   nodename: String, 
+   release: String,
+   version: String,
+   machine: String,
+   domainname: String,
+}
+
+#[allow(non_snake_case)]
+fn utsnamec_to_utsnamers(obj: libc::utsname) -> UtsNameRs
+{
+   let sysname: [c_char; 65];
+   let nodename: [c_char; 65];
+   let release: [c_char; 65];
+   let version: [c_char; 65];
+   let machine: [c_char; 65];
+   let domainname: [c_char; 65];
+
+   sysname = obj.sysname;
+   nodename = obj.nodename;
+   release = obj.release;
+   version = obj.version;
+   machine = obj.machine;
+   domainname = obj.domainname;
+
+   let sysname = {
+      sysname.into_iter()
+      .map(|X| X as u8)
+      .collect::<Vec<u8>>()
+   };
+   let nodename = {
+      nodename.into_iter()
+      .map(|X| X as u8)
+      .collect::<Vec<u8>>()
+   };
+   let release = {
+      release.into_iter()
+      .map(|X| X as u8)
+      .collect::<Vec<u8>>()
+   };
+   let version = {
+      version.into_iter()
+      .map(|X| X as u8)
+      .collect::<Vec<u8>>()
+   };
+   let machine = {
+      machine.into_iter()
+      .map(|X| X as u8)
+      .collect::<Vec<u8>>()
+   };
+   let domainname = {
+      domainname.into_iter()
+      .map(|X| X as u8)
+      .collect::<Vec<u8>>()
+   };
+
+   UtsNameRs {
+      sysname: String::from_utf8_lossy(&sysname[..]).into_owned(),
+      nodename: String::from_utf8_lossy(&nodename[..]).into_owned(),
+      release: String::from_utf8_lossy(&release[..]).into_owned(),
+      version: String::from_utf8_lossy(&version[..]).into_owned(),
+      machine: String::from_utf8_lossy(&machine[..]).into_owned(),
+      domainname: String::from_utf8_lossy(&domainname[..]).into_owned(),
+   }
+}
+
+fn uname_rust() -> UtsNameRs 
+{
+   let mut buffer: libc::utsname;
+   let endereco: *mut libc::utsname;
+
+   buffer = unsafe { zeroed::<libc::utsname>() };
+   endereco = &mut buffer as *mut libc::utsname;
+   
+   unsafe { libc::uname(endereco) };
+   utsnamec_to_utsnamers(buffer)
+}
+
+
+#[allow(unused)]
+#[cfg(test)]
+mod tests {
+   use std::mem::{transmute, zeroed};
+   use std::ffi::{CString, c_char};
+
+   fn debug_utsname(obj: *mut libc::utsname) {
+      let novo = super::utsnamec_to_utsnamers(unsafe { *obj });
+
+      println!("(struct UtsName) {{
+         \r\tsysname: {}
+         \r\tnodename: {}
+         \r\trelease: {}
+         \r\tversion: {}
+         \r\tmachine: {}
+         \r\tdomainname: '{}'\n}}",
+         novo.sysname, novo.nodename, novo.release, novo.version,
+         novo.machine, novo.domainname
+      );
+   }
+
+   #[test]
+   fn visualizando_chamada_uname_libc() 
+   {
+      type UtsName = libc::utsname;
+      type UN = UtsName;
+
+      let mut buffer: UN = unsafe { zeroed::<UtsName>() };
+      let refs = &mut buffer;
+      // let endereco = unsafe { transmute::<UNref, UNptr>(refs) };
+      let endereco = &mut buffer as *mut UN;
+      
+      unsafe { libc::uname(endereco) };
+      debug_utsname(endereco);
+   }
+
+   #[test]
+   fn funcao_de_confirmacao_do_tipo_linux() {
+      println!("Linux WSL? {}", super::e_um_linux_wsl());
+   }
+
+   #[test]
+   fn caminho_escolhido_neste_sistema()
+   { 
+      let info = super::uname_rust();
+
+      println!("\n{}({})", info.sysname, info.release);
+   }
+}
