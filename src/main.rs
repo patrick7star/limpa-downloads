@@ -13,7 +13,7 @@
 
 // Módulos do programa.
 mod item_de_exclusao;
-mod janela_grafica;
+mod graficos;
 mod letreiro;
 mod links;
 //mod configuracao;

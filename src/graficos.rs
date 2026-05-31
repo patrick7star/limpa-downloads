@@ -47,17 +47,6 @@ pub trait DropGrafico {
    fn drop(&mut self, janela:&Window);
 }
 
-enum Temas {
-   Verde(u8),
-   Vermelho(u8),
-   Amarelo(u8),
-   AzulMarinho(u8),
-   Violenta(u8),
-   // Primeiro é a fonte do texto, seguido do seu fundo.
-   Papeis(u8, u8)
-}
-
-
 /* string específica do `Item` e extrai sua porcentagem, que fica 
  * geralmente no final. Retorna tal valor como um float. */
 fn extrai_percentual(item_str:&str) -> f32 {
