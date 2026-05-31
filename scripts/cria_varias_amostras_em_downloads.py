@@ -11,7 +11,7 @@
  preenchido com uma quantia randomica de bytes(zeros).
 """
 
-import json, string, unittest
+import json, string, unittest, platform
 from random import (randint)
 from pathlib import (Path)
 from os import (getenv)
@@ -57,7 +57,8 @@ def cria_arquivo_branco(caminho: Path, extensao: str) -> Path:
    return pathname
 
 def geracao_aleatoria_de_varias_extensoes_em_definicoes() -> None:
-      destino = Path(getenv("HOME"), "Downloads") 
+      #destino = Path(getenv("HOME"), "Downloads") 
+      destino = caminho_de_destino()
 
       with open("definicoes.json", "rt") as stream:
          definicoes = json.load(stream) 
@@ -68,7 +69,8 @@ def geracao_aleatoria_de_varias_extensoes_em_definicoes() -> None:
          print("Finalizado.")
 
 def gerador_aleatorio_de_varias_extensoes_paralelo() -> None:
-   destino = Path(getenv("HOME"), "Downloads") 
+   #destino = Path(getenv("HOME"), "Downloads") 
+   destino = caminho_de_destino()
    pool = []
 
    with open("definicoes.json", "rt") as stream:
@@ -90,9 +92,28 @@ def gerador_aleatorio_de_varias_extensoes_paralelo() -> None:
          print("Tarefa [%d] terminada com sucesso." % fio.pid)
       print("Tudo foi executado conforme.")
 
+def caminho_de_destino() -> Path:
+   kernel_linux = platform.system().lower() == "linux" 
+   forque_wsl = "wsl2" in platform.release().lower()
+
+   # Trata caso especial onde o Linux é na verdade um WSL. Neste caso acessa
+   # a pasta de 'downlaods' do Windows, pois nem deve haver no Linux(WSL).
+   if kernel_linux and forque_wsl:
+      BASE = getenv("HOMEPATH")
+      return Path(BASE, "Downloads")
+   else:
+      return Path(getenv("HOME"), "Downloads") 
+
 # === === ===  === === === === === === === === === === === === === === === ==
 #	                  Testes Unitários 
 # === === ===  === === === === === === === === === === === === === === === ==
+class CaminhoDeDestinoNoWLS(unittest.TestCase):
+   def runTest(self):
+      result = caminho_de_destino()
+
+      print(platform.system(), platform.release())
+      print("Caminho confirma '{}'?".format(result))
+
 class AmostrasDeStringsGeradasRandomicamente(unittest.TestCase):
    def runTest(self):
       for _ in range(10):
