@@ -8,12 +8,21 @@ use std::path::Path;
 use std::fmt::Debug;
 
 
+/** Aplica remoção dentro de diretório, apenas pegando caminhos e subdiretórios
+ * expirados dentro do diretório. 
+ */
 pub fn remocao_completa<P>(caminho:&P) 
   where P: AsRef<Path> + ?Sized + Debug
 {
-   let entradas = caminho.as_ref().read_dir().unwrap();
+   let entradas = match caminho.as_ref().read_dir() {
+      Ok(entry) => entry,
+      Err(erro) =>
+         { panic!("[ERROR] {}", erro.kind()); }
+   };
+
    for entrada in  entradas {
       let x = entrada.unwrap().path(); 
+
       if x.as_path().is_symlink() 
          { eprintln!("{:#?} é um link simbólico!", x); }
       else if x.as_path().is_file() { 
@@ -49,6 +58,17 @@ pub fn remocao_completa<P>(caminho:&P)
    };
 }
 
+pub fn acesso_medio_dir<P>(caminho:&P) -> f32
+  where P: AsRef<Path> + ?Sized
+{
+   let mut tempo: f32 = 0.0;
+   let mut contador: f32 = 0.0;
+
+   auxiliar_amd(caminho, &mut tempo, &mut contador);
+   tempo / contador
+}
+
+
 fn auxiliar_amd<P>(caminho:&P, tm:&mut f32, ctd:&mut f32) 
   where P: AsRef<Path> + ?Sized
 {
@@ -83,60 +103,18 @@ fn auxiliar_amd<P>(caminho:&P, tm:&mut f32, ctd:&mut f32)
    }
 }
 
-pub fn acesso_medio_dir<P>(caminho:&P) -> f32
-  where P: AsRef<Path> + ?Sized
-{
-   let mut tempo: f32 = 0.0;
-   let mut contador: f32 = 0.0;
-
-   auxiliar_amd(caminho, &mut tempo, &mut contador);
-   tempo / contador
-}
-
-/* Desconsidera diretórios dentro de diretórios,
- * só retorna 'falso', se e somente se, um
- * arquivo, ou "variantes" dele forem encontrados. */
-#[allow(dead_code)]
-fn sem_arquivos(caminho: &Path, contador: &mut u8) {
-   if caminho.is_dir() {
-      for e in caminho.read_dir().unwrap() {
-         let path = e.unwrap().path();
-         sem_arquivos(path.as_path(), contador);
-      }
-   } else if caminho.is_file() {
-      // falseia conjutura.
-      *contador += 1;
-   } else {
-      panic!("tipo não implementado, mas se não for arquivo então conta!");
-   }
-}
-/* varre todo diretório, e seus subdiretórios,
- * a procura de um único arquivo, se não houver
- * nada, então será apenas considerado como
- * vázio, por mais que haja vários diretórios
- * vázios internos, um dentro dos outros. */
-#[allow(dead_code)]
-pub fn dir_sem_arquivos<P>(caminho: P) -> bool
-  where P: AsRef<Path> 
-{ 
-   let mut contador = 0;
-   sem_arquivos(caminho.as_ref(), &mut contador); 
-   /* se contabilizar, no mínimo um arquivo, então
-    * o diretório não é composto apenas de diretórios
-    * vázios. */
-   contador == 0
-}
-
 
 #[cfg(test)]
 mod tests {
    extern crate utilitarios;
+
    use utilitarios::{
       legivel::tempo_legivel_decimal,
       arvore::arvore
    };
    use std::path::Path;
    use super::*;
+   #[allow(unused)]
    use std::fs::{remove_dir_all};
    use std::env::temp_dir;
    use std::process::Command;
@@ -184,37 +162,5 @@ mod tests {
       println!("último acesso: {}", traducao.unwrap());
       // avaliação manual.
       assert!(true);
-   }
-
-   #[test]
-   #[allow(non_snake_case)]
-   fn diretorioVazio() {
-      // criação temporária da amostra a ser testada.
-      Command::new("bash")
-      .arg("src/item_de_exclusao/variados-tipos-dirs.sh")
-      .output().unwrap();
-      println!("árvore de diretórios criadas para testagem.");
-      // verifica se foi criada...
-      let raiz = temp_dir().join("pasta-testes");
-      assert!(raiz.as_path().exists());
-      // entradas e saidas esperadas:
-      let entrada_e_saida = [
-         (raiz.join("amostra_i"), true),
-         (raiz.join("amostra_ii"), true),
-         (raiz.join("amostra_iii"), true),
-         (raiz.join("amostra_iv"), false),
-         (raiz.join("amostra_v"), true),
-         (raiz.join("amostra_vi"), false),
-         (raiz.join("amostra_vii"), true),
-      ];
-      // execução do teste em sí.
-      for (caminho, saida) in entrada_e_saida.into_iter() {
-         let nome = &caminho.file_name().unwrap();
-         let resultado = dir_sem_arquivos(caminho.clone());
-         println!("{:#?}, sem arquivos? {}", nome, resultado);
-         assert_eq!(resultado, saida);
-      }
-      // excluindo raíz.
-      remove_dir_all(raiz).unwrap();
    }
 }
