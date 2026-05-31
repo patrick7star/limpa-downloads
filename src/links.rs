@@ -29,21 +29,6 @@ pub fn computa_caminho<P: AsRef<Path>>(complemento: P) -> PathBuf
 
 pub fn linka_executaveis(nome_do_linque: &str) 
 {
-   match cria_linques_locais(nome_do_linque) {
-      Ok(_) => 
-         { println!("O linque local foi criado com sucesso."); }
-      Err(erro) => match erro.kind() {
-         io::ErrorKind::AlreadyExists => {
-            if cfg!(debug_assertions)
-               { println!("Já existe um linque local do 'modo debug'."); }
-            else 
-               { println!("Já existe um linque local."); }
-         } _ =>
-            // Demais erros ainda não tratados.
-            { panic!("{}", erro); }
-      }
-   };
-
    match cria_linques_no_repositorio(nome_do_linque) {
       Ok(caminho) => { 
          assert!(caminho.exists()); 
@@ -82,44 +67,18 @@ fn cria_linques_no_repositorio(nome_do_linque: &str) -> io::Result<PathBuf>
    let fonte = &caminho_do_executavel;
    let destino = Path::new(&caminho_repositorio).join(nome_do_linque);
    let bate = Component::Normal(OsStr::new("release"));
+   let alvo_correto = fonte.components().any(|part| part == bate);
 
    if cfg!(debug_assertions)
       { println!("fonte: {:?}\ndestino: {:?}", fonte, destino); }
    
    // Verificação se estamos nos referindo apenas da parte 'release'.
-   if fonte.components().any(|part| part == bate) {
+   if alvo_correto {
       symlink(fonte, &destino)?;
       Ok(destino)
    } else
       { Err(io::ErrorKind::Unsupported.into()) }
 }
-
-fn cria_linques_locais(nome_do_linque: &str) -> io::Result<PathBuf>
-{
-   let (fonte, destino): (PathBuf,PathBuf);
-   const COMPLEMENTO:&str = "target/debug/limpa_downloads";
-   let base: String;
-
-   // Seleção baseado no tipo de optimização na compilação:
-   if cfg!(debug_assertions) 
-   {
-      let novo_nome = format!("{}-debug", nome_do_linque);
-      fonte = computa_caminho(COMPLEMENTO);
-      destino = computa_caminho(&novo_nome);
-
-   } else {
-      // Coloca direto no repositório de linques. Se houver um.
-      base = var("LINKS").unwrap();
-      fonte = computa_caminho(COMPLEMENTO);
-      destino = Path::new(&base).join(nome_do_linque);
-   }
-
-   // Escolhe a criação do linque, baseado no tipo de execução aplicada.
-   symlink(fonte, &destino)?;
-   // Retorno do linque que acabou de ser criado.
-   Ok(destino)
-}
-
 
 #[cfg(test)]
 mod tests {
