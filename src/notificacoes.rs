@@ -1,6 +1,10 @@
 // Biblioteca do Rust:
 use std::process::Command;
 use std::time::Duration;
+use std::path::{Path};
+
+// Caminho até o programa que é usado abaixo.
+const PROGRAMA: &'static str = "/bin/notify-send";
 
 /* função que realmente puxa uma notificação do sistema, respeitado
  * os parâmetros exigidos. */
@@ -20,10 +24,12 @@ fn popup_notificacao(nome: &str, icone: &str, duracao: Duration,
       mensagem
    ];
 
-   // executando comando ...
-   Command::new("notify-send")
-   .args(argumentos.into_iter())
-   .spawn().unwrap().wait().unwrap();
+   if o_programa_esta_instalado() {
+      // executando comando ...
+      Command::new("notify-send")
+      .args(argumentos.into_iter())
+      .spawn().unwrap().wait().unwrap();
+   }
 
    Ok(())
 }
@@ -54,6 +60,9 @@ pub fn avisa_de_diretorio_esta_vazio() {
       "o diretório está completamente vázio(I)"
    ).unwrap();
 }
+
+fn o_programa_esta_instalado() -> bool 
+   { Path::new(PROGRAMA).exists() }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
