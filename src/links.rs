@@ -10,32 +10,11 @@ use std::env::{var, VarError};
 use std::io;
 
 
-/// Computa o caminho até o projeto, baseado que, tal executável deve está
-/// no lugar comum onde uma simples compilação do Rust o faz se não for 
-/// definida diferente. Portanto em algum subdiretório do diretório 'target'.
-#[allow(dead_code)]
-pub fn computa_caminho_i(caminho_str:&str) -> PathBuf {
-   match current_exe() {
-   // à partir do caminho do executável ...
-      Ok(mut base) => {
-         // remove executável do caminho.
-         base.pop(); 
-         // sai do subdiretório 'release'.
-         base.pop(); 
-         // sai do subdiretório 'target'.
-         base.pop();
-         // complementa com o caminho passado.
-         base.push(caminho_str);
-         return base;
-      } Err(_) =>
-         { panic!("não foi possível obter o caminho do executável!"); }
-   }
-}
-
 /* Computa o caminho do diretório do projeto, então anexa o resto do caminho
  * dado. Entretanto, é um método diferente do que já tem deste tipo de 
  * função aqui. */
-pub fn computa_caminho<P: AsRef<Path>>(complemento: P) -> PathBuf {
+pub fn computa_caminho<P: AsRef<Path>>(complemento: P) -> PathBuf
+{
    let mut caminho = current_exe().unwrap();
    const PROJETO: &str = "limpa-downloads";
    let bate = OsStr::new(PROJETO);
@@ -46,6 +25,40 @@ pub fn computa_caminho<P: AsRef<Path>>(complemento: P) -> PathBuf {
       base = caminho.file_name();
    }
    caminho.join(complemento)
+}
+
+pub fn linka_executaveis(nome_do_linque: &str) 
+{
+   match cria_linques_locais(nome_do_linque) {
+      Ok(_) => 
+         { println!("O linque local foi criado com sucesso."); }
+      Err(erro) => match erro.kind() {
+         io::ErrorKind::AlreadyExists => {
+            if cfg!(debug_assertions)
+               { println!("Já existe um linque local do 'modo debug'."); }
+            else 
+               { println!("Já existe um linque local."); }
+         } _ =>
+            // Demais erros ainda não tratados.
+            { panic!("{}", erro); }
+      }
+   };
+
+   match cria_linques_no_repositorio(nome_do_linque) {
+      Ok(caminho) => { 
+         assert!(caminho.exists()); 
+         println!("Linque criado com sucesso em $LINKS."); 
+      } Err(classificacao_do_erro) => { 
+         match classificacao_do_erro.kind() {
+            io::ErrorKind::AlreadyExists =>
+               { println!("Já existe um linque em $LINKS."); }
+            io::ErrorKind::Unsupported =>
+               { println!("Versão 'debug' não cria linque do repositório.");}
+            _ =>
+               { panic!("{}", classificacao_do_erro); }
+         }
+      } 
+   }
 }
 
 
@@ -84,17 +97,21 @@ fn cria_linques_no_repositorio(nome_do_linque: &str) -> io::Result<PathBuf>
 fn cria_linques_locais(nome_do_linque: &str) -> io::Result<PathBuf>
 {
    let (fonte, destino): (PathBuf,PathBuf);
+   const COMPLEMENTO:&str = "target/debug/limpa_downloads";
+   let base: String;
 
    // Seleção baseado no tipo de optimização na compilação:
    if cfg!(debug_assertions) 
    {
       let novo_nome = format!("{}-debug", nome_do_linque);
-      fonte = computa_caminho("target/debug/limpa_downloads");
+      fonte = computa_caminho(COMPLEMENTO);
       destino = computa_caminho(&novo_nome);
 
    } else {
-      fonte = computa_caminho("target/release/limpa_downloads");
-      destino = computa_caminho(nome_do_linque);
+      // Coloca direto no repositório de linques. Se houver um.
+      base = var("LINKS").unwrap();
+      fonte = computa_caminho(COMPLEMENTO);
+      destino = Path::new(&base).join(nome_do_linque);
    }
 
    // Escolhe a criação do linque, baseado no tipo de execução aplicada.
@@ -103,39 +120,6 @@ fn cria_linques_locais(nome_do_linque: &str) -> io::Result<PathBuf>
    Ok(destino)
 }
 
-pub fn linka_executaveis(nome_do_linque: &str) 
-{
-   match cria_linques_locais(nome_do_linque) {
-      Ok(_) => 
-         { println!("O linque local foi criado com sucesso."); }
-      Err(erro) => match erro.kind() {
-         io::ErrorKind::AlreadyExists => {
-            if cfg!(debug_assertions)
-               { println!("Já existe um linque local do 'modo debug'."); }
-            else 
-               { println!("Já existe um linque local."); }
-         } _ =>
-         // Demais erros ainda não tratados.
-            { panic!("{}", erro); }
-      }
-   };
-
-   match cria_linques_no_repositorio(nome_do_linque) {
-      Ok(caminho) => { 
-         assert!(caminho.exists()); 
-         println!("Linque criado com sucesso em $LINKS."); 
-      } Err(classificacao_do_erro) => { 
-         match classificacao_do_erro.kind() {
-            io::ErrorKind::AlreadyExists =>
-               { println!("Já existe um linque em $LINKS."); }
-            io::ErrorKind::Unsupported =>
-               { println!("Versão 'debug' não cria linque do repositório.");}
-            _ =>
-               { panic!("{}", classificacao_do_erro); }
-         }
-      } 
-   }
-}
 
 #[cfg(test)]
 mod tests {
