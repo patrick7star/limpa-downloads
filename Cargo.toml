@@ -1,6 +1,6 @@
 [package]
 name = "limpa_downloads"
-version = "0.6.1"
+version = "0.6.2"
 edition = "2021"
 license = "mit"
 rust-version = "1.60"
