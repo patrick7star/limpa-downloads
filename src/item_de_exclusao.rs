@@ -411,10 +411,8 @@ fn caminho_da_raiz() -> PathBuf {
 }
 
 fn e_um_linux_wsl() -> bool {
-   let mut buffer = unsafe { zeroed::<libc::utsname>() };
-   let endereco = &mut buffer as *mut libc::utsname;
-   let _= unsafe { libc::uname(endereco) };
-   let info = utsnamec_to_utsnamers(buffer);
+   let info = uname_rust();
+
    // Proposições:
    let kernel_linux = {
       info.sysname == "Linux" ||
