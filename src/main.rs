@@ -1,13 +1,13 @@
 /*!
-   Limpa os downloads antigos que podem "vencer" rapidamente, ou seja, 
+   Limpa os downloads antigos que podem "vencer" rapidamente, ou seja,
  não será utilizado mais.
 
    O programa tem dois tipos de interfaces: a em modo-de-texto e uma
  "semi-gráfica"(utilizando ncurses). Você pode acessar qualquer uma,
  sendo a primeira apenas executando o programa em terminal, e a outra
- com a opção '--ncurses'. Dentro desta segunda também tem a opção 
+ com a opção '--ncurses'. Dentro desta segunda também tem a opção
  "lança janela", que desanexa a janela ncurses do atual terminal
- chamado; para chamar tal opção use '--lanca-janela', é ótimo para 
+ chamado; para chamar tal opção use '--lanca-janela', é ótimo para
  executar tal programa de forma agendada.
 */
 
@@ -31,25 +31,24 @@ use std::convert::TryInto;
 
 fn main() {
    /* Para imediatamente o programa, pois foi detectada uma instância deste
-    * programa em execução. Não permitir mais que uma é a melhor forma de 
+    * programa em execução. Não permitir mais que uma é a melhor forma de
     * evitar qualquer conflito e comportamento indeterminado dos algoritmos
     * internos deste programa. */
-   if unsafe { ha_outra_instancia_em_execucacao()  } { 
-      print!("Já há uma instância deste programa em execução!\n"); 
+   if unsafe { ha_outra_instancia_em_execucacao()  } {
+      print!("Já há uma instância deste programa em execução!\n");
       exit(99);
    }
 
    /* Nota: isso é uma parte temporária que foi posta apenas pra que alguns
     * testes sejam realizados. Ou seja, será removido, e já está em vias
     * de ser substituído. */
-   if cfg!(debug_assertions) { 
+   if cfg!(debug_assertions) {
       const N: u64 = 400;
       let pausa = std::time::Duration::from_millis(N);
 
       std::thread::sleep(pausa);
-      println!("Está no modo DEBUG"); 
+      println!("Está no modo DEBUG");
    }
-
 
    let mut limpeza = FilaExclusao::gera();
    // total de itens inicialmente, quando a fila é gerada.
@@ -63,7 +62,7 @@ fn main() {
 }
 
 // procedimento que levanta uma notificação por algo corrido no programa.
-fn alerta_sobre_remocoes(obj: &mut FilaExclusao, total_inicial: usize) 
+fn alerta_sobre_remocoes(obj: &mut FilaExclusao, total_inicial: usize)
 {
    if cfg!(debug_assertions)
       { println!("qtd. inicial: {total_inicial}"); }
@@ -80,7 +79,7 @@ fn alerta_sobre_remocoes(obj: &mut FilaExclusao, total_inicial: usize)
    let houve_alguma_variacao = diminuicao > 0;
 
    // emissão da notificação se necessária.
-   if houve_alguma_variacao 
+   if houve_alguma_variacao
       { notificacoes::informa_n_itens_removidos(diminuicao); }
 }
 
@@ -92,18 +91,18 @@ fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
    /* Pode ou não inicializar o 'ncurses', na verdade a probabilidade é 10%.
     * Tal função serve como agilidade. Às vezes não há o que excluir, então
     * ao invés de lançar aa interface gráfica, apenas índica, via notificação
-    * que não há conteúdo há visualizar. 
+    * que não há conteúdo há visualizar.
     */
    else if args().any(|s| s == "--agil")
       { Grafico::visualiza_provavel(objeto); }
    else if args().any(|s| s == "--lanca-janela") {
-   /* Para encurtar o comando no agendador 'cron', portanto não será 
-    * mais preciso escrever o comando do emulador de terminal, para 
+   /* Para encurtar o comando no agendador 'cron', portanto não será
+    * mais preciso escrever o comando do emulador de terminal, para
     * lançar o comando propriamente. */
       let funcao: fn(_) -> PathBuf = links::computa_caminho;
       let caminho_exe = funcao("target/debug/limpa_downloads");
       let executavel = format!("{} --ncurses", caminho_exe.display());
-      /* Criando comando para lança o programa na interface do ncurses 
+      /* Criando comando para lança o programa na interface do ncurses
       numa nova janela. */
       let mut comando = Command::new("mate-terminal");
 
@@ -111,13 +110,13 @@ fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
       comando.spawn().unwrap().wait().unwrap();
       println!("Abriu uma nova janela para execução do programa.");
    }
-   /* padrão, apenas mostra lista de exclusão de hoje, e deleta já 
+   /* padrão, apenas mostra lista de exclusão de hoje, e deleta já
     * expirados. */
-   else 
+   else
       { objeto.visualiza(); }
 }
 
 #[link(name="instancia", kind="static")]
 extern "C" {
-   pub fn ha_outra_instancia_em_execucacao() -> bool; 
+   pub fn ha_outra_instancia_em_execucacao() -> bool;
 }
