@@ -28,66 +28,6 @@ use std::process::{Command, exit};
 use std::path::PathBuf;
 use std::convert::TryInto;
 
-// procedimento que levanta uma notificação por algo corrido no programa.
-fn alerta_sobre_remocoes(obj: &mut FilaExclusao, total_inicial: usize) 
-{
-   if cfg!(debug_assertions)
-      { println!("qtd. inicial: {total_inicial}"); }
-   // computando uma diminuição do total.
-   let diminuicao: usize = {
-      let a = total_inicial as i32;
-      let b = obj.total() as i32;
-      (a - b).abs().try_into().unwrap()
-   };
-   // tentando visualizar o 'overflow'.
-   if cfg!(debug_assertions)
-      { println!("diminuição: {diminuicao}"); }
-   // verificando se algo foi removido.
-   let houve_alguma_variacao = diminuicao > 0;
-
-   // emissão da notificação se necessária.
-   if houve_alguma_variacao 
-      { notificacoes::informa_n_itens_removidos(diminuicao); }
-}
-
-// seleção do modo gráfico/ou não de visualizar este programa.
-fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
-   if args().any(|s| s == "--ncurses")
-      // Neste caso inicializa o "ncurses"...
-      { Grafico::visualiza_certeza(objeto); }
-   else if args().any(|s| s == "--agil")
-   /* Pode ou não inicializar o 'ncurses', na verdade a probabilidade é 10%.
-    * Tal função serve como agilidade. Às vezes não há o que excluir, então
-    * ao invés de lançar aa interface gráfica, apenas índica, via notificação
-    * que não há conteúdo há visualizar. 
-    */
-      { Grafico::visualiza_provavel(objeto); }
-   else if args().any(|s| s == "--lanca-janela") {
-   /* Para encurtar o comando no agendador 'cron', portanto não será 
-    * mais preciso escrever o comando do emulador de terminal, para 
-    * lançar o comando propriamente. */
-      let funcao: fn(_) -> PathBuf = links::computa_caminho;
-      let caminho_exe = funcao("target/debug/limpa_downloads");
-      let executavel = format!("{} --ncurses", caminho_exe.display());
-      /* Criando comando para lança o programa na interface do ncurses 
-      numa nova janela. */
-      let mut comando = Command::new("mate-terminal");
-
-      comando.args(["--hide-menubar", "--command", executavel.as_str()]);
-      comando.spawn().unwrap().wait().unwrap();
-      println!("Abriu uma nova janela para execução do programa.");
-   }
-   else 
-      /* padrão, apenas mostra lista de exclusão de hoje, e deleta já 
-       * expirados. */
-      { objeto.visualiza(); }
-}
-
-#[link(name="instancia", kind="static")]
-extern "C" {
-   pub fn ha_outra_instancia_em_execucacao() -> bool; 
-}
-
 
 fn main() {
    /* Para imediatamente o programa, pois foi detectada uma instância deste
@@ -122,3 +62,62 @@ fn main() {
    links::linka_executaveis("limpa-downloads");
 }
 
+// procedimento que levanta uma notificação por algo corrido no programa.
+fn alerta_sobre_remocoes(obj: &mut FilaExclusao, total_inicial: usize) 
+{
+   if cfg!(debug_assertions)
+      { println!("qtd. inicial: {total_inicial}"); }
+   // computando uma diminuição do total.
+   let diminuicao: usize = {
+      let a = total_inicial as i32;
+      let b = obj.total() as i32;
+      (a - b).abs().try_into().unwrap()
+   };
+   // tentando visualizar o 'overflow'.
+   if cfg!(debug_assertions)
+      { println!("diminuição: {diminuicao}"); }
+   // verificando se algo foi removido.
+   let houve_alguma_variacao = diminuicao > 0;
+
+   // emissão da notificação se necessária.
+   if houve_alguma_variacao 
+      { notificacoes::informa_n_itens_removidos(diminuicao); }
+}
+
+// seleção do modo gráfico/ou não de visualizar este programa.
+fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
+   if args().any(|s| s == "--ncurses")
+      // Neste caso inicializa o "ncurses"...
+      { Grafico::visualiza_certeza(objeto); }
+   /* Pode ou não inicializar o 'ncurses', na verdade a probabilidade é 10%.
+    * Tal função serve como agilidade. Às vezes não há o que excluir, então
+    * ao invés de lançar aa interface gráfica, apenas índica, via notificação
+    * que não há conteúdo há visualizar. 
+    */
+   else if args().any(|s| s == "--agil")
+      { Grafico::visualiza_provavel(objeto); }
+   else if args().any(|s| s == "--lanca-janela") {
+   /* Para encurtar o comando no agendador 'cron', portanto não será 
+    * mais preciso escrever o comando do emulador de terminal, para 
+    * lançar o comando propriamente. */
+      let funcao: fn(_) -> PathBuf = links::computa_caminho;
+      let caminho_exe = funcao("target/debug/limpa_downloads");
+      let executavel = format!("{} --ncurses", caminho_exe.display());
+      /* Criando comando para lança o programa na interface do ncurses 
+      numa nova janela. */
+      let mut comando = Command::new("mate-terminal");
+
+      comando.args(["--hide-menubar", "--command", executavel.as_str()]);
+      comando.spawn().unwrap().wait().unwrap();
+      println!("Abriu uma nova janela para execução do programa.");
+   }
+   /* padrão, apenas mostra lista de exclusão de hoje, e deleta já 
+    * expirados. */
+   else 
+      { objeto.visualiza(); }
+}
+
+#[link(name="instancia", kind="static")]
+extern "C" {
+   pub fn ha_outra_instancia_em_execucacao() -> bool; 
+}
