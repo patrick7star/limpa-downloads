@@ -28,7 +28,6 @@ fn carrega_dicionario_com_definicoes() -> TipoJSON {
    }
 
    let caminho = computa_caminho(NOME_CONFIG);
-   println!("{}", caminho.display());
    let arquivo = File::open(caminho).unwrap(); 
    let objeto = Deserializer::from_reader(arquivo); 
 
