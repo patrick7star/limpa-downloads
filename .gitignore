@@ -2,6 +2,8 @@ Cargo.lock
 lib/rust-utilitarios
 limpa-downloads-debug
 target
-log.txt
-log
+data/log.txt
+data/log
+data/logs
+data/
 lib/linux_x86_64/
