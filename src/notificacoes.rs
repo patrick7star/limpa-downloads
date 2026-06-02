@@ -28,7 +28,7 @@ fn popup_notificacao(nome: &str, icone: &str, duracao: Duration,
       // executando comando ...
       Command::new("notify-send")
       .args(argumentos.into_iter())
-      .spawn().unwrap().wait().unwrap();
+      .spawn().unwrap().wait()?;
    }
 
    Ok(())
@@ -37,19 +37,23 @@ fn popup_notificacao(nome: &str, icone: &str, duracao: Duration,
 /* faz uma notificação da atual transição aplicada ao sistema. */
 pub fn informa_n_itens_removidos(total: usize) {
    let mensagem = format!("foram deletados {} itens!", total);
-
-   // emitindo notificação...
-   popup_notificacao(
+   // Emitindo notificação...
+   let resultado = popup_notificacao(
       // nome do programa e seu ícone:
       "Limpa Downloads",
       "computerjanitor",
       // duração em segundos e sua mensagem:
       Duration::from_secs(25),
       mensagem.as_str()
-   ).unwrap();
+   );
 
-   // emitindo que a mensagem foi enviada.
-   println!("notificação foi \"plotada\" com sucesso.");
+   match resultado {
+      Ok(_) =>
+         // Emitindo que a mensagem foi enviada.
+         { println!("notificação foi \"plotada\" com sucesso."); }
+      Err(erro) =>
+         { eprintln!("[Errro] {}", erro); }
+   }
 }
 
 pub fn avisa_de_diretorio_esta_vazio() {
