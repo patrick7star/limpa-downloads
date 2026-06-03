@@ -20,7 +20,7 @@ mod links;
 mod notificacoes;
 
 // Próprio módulos do projeto:
-use item_de_exclusao::FilaExclusao;
+use item_de_exclusao::{FilaExclusao, e_um_linux_wsl};
 use graficos::{Grafico};
 // biblioteca padrão do Rust:
 use std::env::args;
@@ -83,6 +83,26 @@ fn alerta_sobre_remocoes(obj: &mut FilaExclusao, total_inicial: usize)
       { notificacoes::informa_n_itens_removidos(diminuicao); }
 }
 
+fn lanca_janela_num_linux_puro() 
+{
+   const PROGRAMA: &str = "target/debug/limpa_downloads";
+   let funcao: fn(_) -> PathBuf;
+   let caminho_exe: PathBuf;
+   let executavel: String;
+   let mut comando: Command;
+
+   /* Criando comando para lança o programa na interface do ncurses
+   numa nova janela. */
+   funcao = links::computa_caminho;
+   caminho_exe = funcao(PROGRAMA);
+   executavel = format!("{} --ncurses", caminho_exe.display());
+   comando = Command::new("mate-terminal");
+
+   comando.args(["--hide-menubar", "--command", executavel.as_str()]);
+   comando.spawn().unwrap().wait().unwrap();
+   println!("Abriu uma nova janela para execução do programa.");
+}
+
 // seleção do modo gráfico/ou não de visualizar este programa.
 fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
    if args().any(|s| s == "--ncurses")
@@ -99,16 +119,10 @@ fn tipo_de_visualizacao(objeto: &mut FilaExclusao) {
    /* Para encurtar o comando no agendador 'cron', portanto não será
     * mais preciso escrever o comando do emulador de terminal, para
     * lançar o comando propriamente. */
-      let funcao: fn(_) -> PathBuf = links::computa_caminho;
-      let caminho_exe = funcao("target/debug/limpa_downloads");
-      let executavel = format!("{} --ncurses", caminho_exe.display());
-      /* Criando comando para lança o programa na interface do ncurses
-      numa nova janela. */
-      let mut comando = Command::new("mate-terminal");
-
-      comando.args(["--hide-menubar", "--command", executavel.as_str()]);
-      comando.spawn().unwrap().wait().unwrap();
-      println!("Abriu uma nova janela para execução do programa.");
+      if cfg!(target_os="linux") && !e_um_linux_wsl()
+         { lanca_janela_num_linux_puro(); }
+      else
+         { println!("Não é o sistema adequado."); }
    }
    /* padrão, apenas mostra lista de exclusão de hoje, e deleta já
     * expirados. */
