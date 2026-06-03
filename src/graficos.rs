@@ -1,3 +1,4 @@
+#![allow(unused)]
 /**! Gera a parte de visualização com uma biblioteca semi-gráfica `ncurses`. 
  Que é o mesmo que a impressão no `stdout`, porém de forma dinâmica e 
  animada. 
@@ -11,7 +12,7 @@ use pancurses::{
    endwin, napms, initscr, noecho, curs_set, start_color, init_pair, 
    use_default_colors, Input, Window, COLOR_GREEN, COLOR_RED, COLOR_YELLOW, 
    COLOR_CYAN, A_NORMAL, A_UNDERLINE, A_BOLD, A_REVERSE, COLOR_MAGENTA,
-   COLOR_BLUE
+   COLOR_BLUE, COLOR_WHITE, COLOR_BLACK
 };
 use utilitarios::{
    impressao::circunscrever,
@@ -25,13 +26,23 @@ use super::notificacoes;
 // Biblioteca padrão do Rust:
 use std::time::{Duration, Instant};
 use std::str::FromStr;
+use std::collections::{VecDeque};
 
+// Apelidos para facilitar na codificação.
+type ItemPartes<'m> = (&'m str, &'m str, &'m str, &'m str);
 // ID's de todas paletas de cores criadas e utilizadas:
 static LONGE:     i16  = 99;
 static PERTO:     i16  = 98;
 static MEDIO:     i16  = 97;
 static LI_COR:    i16  = 96;
 static LEH_COR:   i16  = 95;
+// Número das paletas de cores inicializada.
+const VERDE:         i16 = 99;
+const VERMELHO:      i16 = 98;
+const AMARELO:       i16 = 97;
+const AZULMARINHO:   i16 = 96;
+const VIOLETA:       i16 = 95;
+const AZUL:          i16 = 94;
 
 pub trait Grafico {
    /** O mesmo que o método original, porém de forma dinâmica; com coloração
@@ -63,34 +74,6 @@ fn extrai_percentual(item_str:&str) -> f32 {
    }
 }
 
-/* Desenha na tela do 'ncurses' de modo colorido. */
-fn item_visualizacao(janela:&Window, item:&Item) {
-   // próxima linha ...
-   let l = janela.get_cur_y() + 1;
-   let item_str: &String = &StringDinamica::to_string(item);
-   let i = item_str.rfind("[").unwrap();
-   let f = item_str.rfind("]").unwrap();
-   let percentual = extrai_percentual(item_str.as_str());
-
-   janela.mv(l, 0);
-   janela.addnstr(item_str, i + 1); 
-   janela.attrset(A_BOLD);
-
-   if percentual >= 75.0
-      { janela.color_set(94); }
-   else if percentual >= 15.0 && percentual < 50.0 
-      { janela.color_set(MEDIO); }
-   else if percentual < 15.0 
-      { janela.color_set(PERTO); }
-   else 
-      { janela.color_set(LONGE); }
-
-   janela.addnstr(item_str.get(i+1..).unwrap(), f-i-1);
-   janela.attroff(A_BOLD);
-   janela.color_set(0);
-   janela.addnstr(item_str.get(f..).unwrap(), item_str.len() - f);
-}
-
 /* Função pega uma slice-string e imprime-a centralizando-a baseado no 
  * seu tamanho. */
 fn cabecalho<'a>(string:&'a str, janela:&Window, cor:i16) {
@@ -119,39 +102,41 @@ fn cabecalho<'a>(string:&'a str, janela:&Window, cor:i16) {
 fn escreve_listas
  (janela:&Window, todos:&mut Vec<Item>, proximas_exclusao:&mut Vec<Item>) 
 {
+   const MENSAGEM_I: &str = "nenhum item aqui para lista!";
+   const MENSAGEM_II: &str ="nenhum item a excluir hoje!";
+   let (mut lin, mut col): (i32, i32) = (0, 0);
+   let mut informacao = String::new();
+   let (col_max, mut x):(i32, i32) = (janela.get_max_x(), 0);
+
    // primeira lista:
    cabecalho("lista de items", janela, LI_COR);
+
    // mensagem em caso de está parte da lista está vázia.
    if todos.is_empty() {
-      let informacao = circunscrever("nenhum item aqui para lista!");
-      let col: i32 = {
-         let a = janela.get_max_x();
-         let b = informacao.find("\n").unwrap() as i32;
-         (a - b) / 2 
-      };
-      let mut lin = janela.get_cur_y();
+      informacao = circunscrever(MENSAGEM_I);
+      x = informacao.find("\n").unwrap() as i32;
+      col = (col_max - x) / 2;
+      lin = janela.get_cur_y();
 
       for linha in informacao.lines() {
          janela.mvaddstr(lin, col - 3, linha);
          lin += 1;
       }
    }
+
    for item in todos.iter() 
       { item_visualizacao(&janela, item); }
 
-   // segunda lista:
    cabecalho("exclusao de hoje", janela, LEH_COR);
+
    // mensagem em caso de está parte da lista está vázia.
-   if proximas_exclusao.is_empty() {
-      let informacao = circunscrever(
-         "nenhum item a excluir hoje!"
-      );
-      let col:i32 = {
-         let a = janela.get_max_x();
-         let b = informacao.find("\n").unwrap() as i32;
-         (a - b) / 2 
-      };
-      let mut lin = janela.get_cur_y();
+   if proximas_exclusao.is_empty() 
+   {
+      informacao = circunscrever(MENSAGEM_II);
+      x = informacao.find("\n").unwrap() as i32;
+      col = (col_max - x)  / 2; 
+      lin = janela.get_cur_y();
+
       for linha in informacao.lines() {
          janela.mvaddstr(lin, col - 3, linha);
          lin += 1;
@@ -256,33 +241,49 @@ impl FilaExclusao {
    }
 
    fn constroi_status(&mut self, janela: &Window) {
+      type Fila = VecDeque<String>;
+
       let linha = janela.get_max_y() - 1;
       let mut cursor = 0;
-      const ESPACO: i32 = 2;
+      let mut displays = Fila::with_capacity(4);
+      let espaco = " ".repeat(1);
       
-      if !self.proximas_exclusao.is_empty() { 
-         let quantia = self.total();
-         let formatacao = format!("Exclusao: {}", quantia);
+      // Fila de visualizações:
+      displays.push_back(format!("Exclusao: {}", self.total()));
+      displays.push_back(format!("Todos itens: {}", self.todos.len()));
+      displays.push_back(
+         String::from(
+            if cfg!(debug_assertions) 
+               { "modo debug" }
+            else { "Normal" }
+         )
+      );
+      displays.push_back(String::from("<S | Q pra sair>"));
 
-         janela.mvaddstr(linha, 2, formatacao.as_str()); 
-         cursor = ESPACO + formatacao.len() as i32 + ESPACO;
-      }
+      // Começando a desenhar na tela buffer do terminal.
+      janela.mv(linha, 2);
+      janela.color_set(79);
+      janela.addstr(&espaco);
+      janela.addstr(&displays.pop_front().unwrap()); 
+      janela.addstr(&espaco);
 
-      let quantia = self.todos.len();
-      let formatacao = format!("Totos itens: {}", quantia);
+      janela.color_set(77);
+      janela.addstr(&espaco);
+      janela.addstr(&displays.pop_front().unwrap()); 
+      janela.addstr(&espaco);
 
-      janela.mvaddstr(linha, cursor, &formatacao); 
-      cursor += formatacao.len() as i32 + ESPACO;
+      janela.color_set(88);
+      janela.addstr(&espaco);
+      janela.attron(A_UNDERLINE);
+      janela.addstr(&displays.pop_front().unwrap()); 
+      janela.attroff(A_UNDERLINE);
+      janela.addstr(&espaco);
 
-      if cfg!(debug_assertions) {
-         let fmt = " modo debug ";
-
-         janela.attron(A_REVERSE | A_UNDERLINE);
-         janela.color_set(98);
-         janela.mvaddstr(linha, cursor, fmt); 
-         janela.color_set(0);
-         janela.attroff(A_REVERSE | A_UNDERLINE);
-      }
+      janela.color_set(76);
+      janela.addstr(&espaco);
+      janela.addstr(&displays.pop_front().unwrap()); 
+      janela.addstr(&espaco);
+      janela.color_set(0);
    }
 }
 
@@ -317,13 +318,28 @@ fn configuracao_da_janela_principal(janela: &Window) {
 }
 
 fn iniciando_todas_paletas_de_cores() {
-   // paleta de cores:
+   // Paleta de cores com transparência:
    init_pair(99, COLOR_GREEN,    -1);
    init_pair(98, COLOR_RED,      -1);
    init_pair(97, COLOR_YELLOW,   -1);
    init_pair(96, COLOR_CYAN,     -1);
    init_pair(95, COLOR_MAGENTA,  -1);
    init_pair(94, COLOR_BLUE,     -1);
+
+   // Paletas de cores referentes aos planos de fundo.
+   init_pair(89, COLOR_WHITE, COLOR_GREEN);
+   init_pair(88, COLOR_WHITE, COLOR_RED);
+   init_pair(87, COLOR_WHITE, COLOR_YELLOW);
+   init_pair(86, COLOR_WHITE, COLOR_CYAN);
+   init_pair(85, COLOR_WHITE, COLOR_MAGENTA);
+   init_pair(84, COLOR_WHITE, COLOR_BLUE);
+   // O mesmo, porém com uma fonte preta.
+   init_pair(79, COLOR_BLACK, COLOR_GREEN);
+   init_pair(78, COLOR_BLACK, COLOR_RED);
+   init_pair(77, COLOR_BLACK, COLOR_YELLOW);
+   init_pair(76, COLOR_BLACK, COLOR_CYAN);
+   init_pair(75, COLOR_BLACK, COLOR_MAGENTA);
+   init_pair(74, COLOR_BLACK, COLOR_BLUE);
 }
 
 impl Grafico for FilaExclusao 
@@ -396,7 +412,7 @@ impl Grafico for FilaExclusao
       let mut janela = initscr();
       let timer = Instant::now();
       let duracao = Duration::from_secs(80);
-      let mut abandonar_o_loop: bool = false;
+      let mut abandonar_o_loop = false;
       
       configuracao_da_janela_principal(&janela);
       iniciando_todas_paletas_de_cores();
@@ -429,7 +445,6 @@ impl Grafico for FilaExclusao
    }
 }
 
-// exclusão do ítem em sí.
 impl DropGrafico for Item {
    /* apenas acaba se, e somente se, o item expirou. */
    fn drop(&mut self, janela:&Window) {
@@ -467,6 +482,83 @@ impl DropGrafico for Item {
          let _= self;
       }
    }
+}
+
+fn decompoe_em_partes<'a>(entrada: &'a str) -> ItemPartes<'a> 
+{
+   // Partes dos colchetes(o referêncial aqui são os colchetes da barra):
+   let a = entrada.rfind('[').unwrap();   
+   let b = entrada.rfind(']').unwrap();   
+   let c = entrada.find(' ').unwrap();
+   let percentual = entrada.get(b + 1..).unwrap();
+   let progresso = entrada.get((a - 1)..(b + 1)).unwrap();
+   let nome = entrada.get(0..(c + 1)).unwrap();
+   let mut estimado = entrada.get(c..a).unwrap();
+
+   // Retirando espaços branos em ambas pontas.
+   estimado = estimado.trim().trim_end();
+   (nome, estimado, progresso, percentual)
+}
+
+fn define_cor_para_percentual(percentual: f32, janela:&Window) 
+{
+   if percentual >= 75.0
+      { janela.color_set(94); }
+   else if percentual >= 15.0 && percentual < 50.0 
+      { janela.color_set(MEDIO); }
+   else if percentual < 15.0 
+      { janela.color_set(PERTO); }
+   else 
+      { janela.color_set(LONGE); }
+}
+
+fn desenha_barra_de_progresso(entrada: &str, janela: &Window, percentual: f32) 
+{
+   let length = entrada.len();
+   let ultimo = length - 1;
+   let delimitador_direito = entrada.get(ultimo..).unwrap();
+   let delimitador_esquerdo = entrada.get(0..2).unwrap();
+   let barras = entrada.get(2..ultimo).unwrap();
+
+   janela.attrset(A_BOLD);
+   janela.addstr(delimitador_esquerdo);
+   define_cor_para_percentual(percentual, janela);
+   janela.addstr(barras);
+   janela.color_set(0);
+   janela.addstr(delimitador_direito);
+   janela.attroff(A_BOLD);
+   janela.color_set(0);
+}
+
+fn item_visualizacao(janela:&Window, item:&Item) {
+   const MARGEM: i32 = 4;
+   // próxima linha ...
+   let lin = janela.get_cur_y() + 1;
+   let col = janela.get_max_x() + 1;
+   let item = &StringDinamica::to_string(item);
+   let percentual = extrai_percentual(item.as_str());
+   let decomposicao = decompoe_em_partes(&item);
+   // Dividindo de modo certo, como nomes reconheciveis.
+   let nome             = decomposicao.0;
+   let estimado         = decomposicao.1;
+   let progresso        = decomposicao.2;
+   let percentual_fmt   = decomposicao.3;
+   let total = (
+      estimado.len() + progresso.len() + 
+      percentual_fmt.len() 
+   ) as i32;
+
+   // Começar a escrever à partir daqui.
+   janela.mv(lin, MARGEM);
+   janela.attrset(A_BOLD);
+   janela.addstr(nome);
+   // Move este tanto antes da lateral direita.
+   janela.mv(lin, col - total - MARGEM);
+   janela.attrset(A_UNDERLINE);
+   janela.addstr(estimado);
+   janela.attroff(A_UNDERLINE);
+   desenha_barra_de_progresso(progresso, janela, percentual);
+   janela.addstr(percentual_fmt);
 }
 
 #[cfg(test)]
