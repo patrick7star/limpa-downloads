@@ -32,6 +32,25 @@ use utilitarios::legivel::{tamanho_legivel, tempo_legivel_duration};
 trait DropPadrao 
    { fn drop(&mut self); }
 
+pub fn e_um_linux_wsl() -> bool {
+   let info = uname_rust();
+
+   // Proposições:
+   let kernel_linux = {
+      info.sysname == "Linux" ||
+      info.sysname == "GNU/Linux" || 
+      info.sysname.contains(&"Linux") ||
+      info.sysname.contains(&"linux") 
+   };
+   let forque_wsl = {
+      info.release.contains(&"microsoft") ||
+      info.release.contains(&"WSL2") || 
+      info.release.contains(&"WSL") 
+   };
+
+   kernel_linux && forque_wsl
+}
+
 /* === === ===  === === === === === === === === === === === === === === ====
  *	                        Modelação do Item 
  * === === ===  === === === === === === === === === === === === === === == */
@@ -410,24 +429,6 @@ fn caminho_da_raiz() -> PathBuf {
    }
 }
 
-fn e_um_linux_wsl() -> bool {
-   let info = uname_rust();
-
-   // Proposições:
-   let kernel_linux = {
-      info.sysname == "Linux" ||
-      info.sysname == "GNU/Linux" || 
-      info.sysname.contains(&"Linux") ||
-      info.sysname.contains(&"linux") 
-   };
-   let forque_wsl = {
-      info.release.contains(&"microsoft") ||
-      info.release.contains(&"WSL2") || 
-      info.release.contains(&"WSL") 
-   };
-
-   kernel_linux && forque_wsl
-}
 
 #[allow(unused)]
 struct UtsNameRs {
