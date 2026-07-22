@@ -3,7 +3,7 @@ extern crate utilitarios;
 
 // Bibliotecas externas:
 use serde_json::{Deserializer, Map, Value};
-use utilitarios::legivel::{interpleta_string_de_tempo};
+use utilitarios::legivel::{interpreta_string_de_tempo};
 // Biblioteca padrão do Rust:
 use std::fs::{File};
 use std::time::{Duration};
@@ -117,7 +117,7 @@ pub fn duracao_para_devida_extensao_por_json(extension: &str) -> Duration {
    else
       { valor = String::from(PADRAO); }
 
-   interpleta_string_de_tempo(&valor).unwrap()
+   interpreta_string_de_tempo(&valor).unwrap()
 }
 
 // Computa duração para um diretório, seja qual for seu estado.
