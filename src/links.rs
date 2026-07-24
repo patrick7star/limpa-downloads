@@ -1,3 +1,4 @@
+extern crate utilitarios;
 
 /* cria link simbólico tanto para a versão em debug, quanto para o 
  * binário final. */
@@ -8,6 +9,8 @@ use std::ffi::{OsStr};
 use std::path::{Path, Component, PathBuf};
 use std::env::{var, VarError};
 use std::io;
+// Biblioteca externas:
+use utilitarios::legivel::{tempo_legivel_duration};
 
 
 /* Computa o caminho do diretório do projeto, então anexa o resto do caminho
@@ -29,16 +32,33 @@ pub fn computa_caminho<P: AsRef<Path>>(complemento: P) -> PathBuf
 
 pub fn linka_executaveis(nome_do_linque: &str) 
 {
-   match cria_linques_no_repositorio(nome_do_linque) {
+   const BASE: &str = env!("LINKS");
+
+   match cria_linques_no_repositorio(nome_do_linque) 
+   {
       Ok(caminho) => { 
          assert!(caminho.exists()); 
          println!("Linque criado com sucesso em $LINKS."); 
-      } Err(classificacao_do_erro) => { 
-         match classificacao_do_erro.kind() {
-            io::ErrorKind::AlreadyExists =>
-               { println!("Já existe um linque em $LINKS."); }
-            io::ErrorKind::Unsupported =>
-               { println!("Versão 'debug' não cria linque do repositório.");}
+      } Err(classificacao_do_erro) => {
+         let linque = Path::new(BASE).join(nome_do_linque);
+         // Encurtador do nome longo.
+         let tempo_do_symlink = tempo_existencia_symbolic_link;
+
+         match classificacao_do_erro.kind() 
+         {
+            io::ErrorKind::AlreadyExists => { 
+               let msg_erro = "Já existe um linque em $LINKS";
+
+               if let Ok(fmt) = tempo_do_symlink(&linque)
+                  { eprintln!("{} há ~ {}.", msg_erro, fmt); }
+            } io::ErrorKind::Unsupported => { 
+               eprintln!("Versão 'debug' não cria linque do repositório.");
+
+               if linque.exists() {
+                  if let Ok(fmt) = tempo_do_symlink(&linque)
+                     { eprintln!("Existe um linque(release) há {}", fmt); }
+               }
+            }
             _ =>
                { panic!("{}", classificacao_do_erro); }
          }
@@ -46,6 +66,23 @@ pub fn linka_executaveis(nome_do_linque: &str)
    }
 }
 
+fn tempo_existencia_symbolic_link(linque: &Path) -> io::Result<String>
+{
+   let metadados     = linque.symlink_metadata()?;
+   let systemclock   = metadados.created()?;
+
+   match systemclock.elapsed()
+   {
+      Ok(decorrido) => 
+         { Ok(tempo_legivel_duration(decorrido, true)) }
+      Err(erro) => {
+         let fmt = format!("{}", erro);
+         let tipo = io::ErrorKind::Other;
+
+         Err(io::Error::new(tipo, fmt))
+      }
+   }
+}
 
 fn cria_linques_no_repositorio(nome_do_linque: &str) -> io::Result<PathBuf> 
 {
