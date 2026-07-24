@@ -1,4 +1,3 @@
-#![allow(unused)]
 /**! Gera a parte de visualização com uma biblioteca semi-gráfica `ncurses`. 
  Que é o mesmo que a impressão no `stdout`, porém de forma dinâmica e 
  animada. 
@@ -11,8 +10,8 @@ extern crate utilitarios;
 use pancurses::{ 
    endwin, napms, initscr, noecho, curs_set, start_color, init_pair, 
    use_default_colors, Input, Window, COLOR_GREEN, COLOR_RED, COLOR_YELLOW, 
-   COLOR_CYAN, A_NORMAL, A_UNDERLINE, A_BOLD, A_REVERSE, COLOR_MAGENTA,
-   COLOR_BLUE, COLOR_WHITE, COLOR_BLACK
+   COLOR_CYAN, A_NORMAL, A_UNDERLINE, A_BOLD, COLOR_MAGENTA, COLOR_BLUE, 
+   COLOR_WHITE, COLOR_BLACK
 };
 use utilitarios::{
    impressao::circunscrever,
@@ -36,13 +35,14 @@ static PERTO:     i16  = 98;
 static MEDIO:     i16  = 97;
 static LI_COR:    i16  = 96;
 static LEH_COR:   i16  = 95;
-// Número das paletas de cores inicializada.
+/* Número das paletas de cores inicializada.
 const VERDE:         i16 = 99;
 const VERMELHO:      i16 = 98;
 const AMARELO:       i16 = 97;
 const AZULMARINHO:   i16 = 96;
 const VIOLETA:       i16 = 95;
 const AZUL:          i16 = 94;
+*/
 
 pub trait Grafico {
    /** O mesmo que o método original, porém de forma dinâmica; com coloração
@@ -104,8 +104,11 @@ fn escreve_listas
 {
    const MENSAGEM_I: &str = "nenhum item aqui para lista!";
    const MENSAGEM_II: &str ="nenhum item a excluir hoje!";
+   #[allow(unused_assignments)]
    let (mut lin, mut col): (i32, i32) = (0, 0);
+   #[allow(unused_assignments)]
    let mut informacao = String::new();
+   #[allow(unused_assignments)]
    let (col_max, mut x):(i32, i32) = (janela.get_max_x(), 0);
 
    // primeira lista:
@@ -142,6 +145,7 @@ fn escreve_listas
          lin += 1;
       }
    }
+
    for item in proximas_exclusao.iter() 
       { item_visualizacao(&janela, item); }
 }
@@ -244,9 +248,11 @@ impl FilaExclusao {
       type Fila = VecDeque<String>;
 
       let linha = janela.get_max_y() - 1;
-      let mut cursor = 0;
       let mut displays = Fila::with_capacity(4);
       let espaco = " ".repeat(1);
+      let cursor = sortear::usize(0..=1);
+      let teclas: [char; 2] = ['S', 'Q'];
+      let tecla_escolhida = format!("<{}> pra sair", teclas[cursor]);
       
       // Fila de visualizações:
       displays.push_back(format!("Exclusao: {}", self.total()));
@@ -258,7 +264,7 @@ impl FilaExclusao {
             else { "Normal" }
          )
       );
-      displays.push_back(String::from("<S | Q pra sair>"));
+      displays.push_back(String::from(tecla_escolhida));
 
       // Começando a desenhar na tela buffer do terminal.
       janela.mv(linha, 2);
