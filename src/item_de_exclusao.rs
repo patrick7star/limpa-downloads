@@ -429,8 +429,6 @@ fn caminho_da_raiz() -> PathBuf {
    }
 }
 
-
-#[allow(unused)]
 struct UtsNameRs {
    sysname: String,
    nodename: String, 
