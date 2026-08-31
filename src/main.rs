@@ -18,6 +18,7 @@ mod letreiro;
 mod links;
 //mod configuracao;
 mod notificacoes;
+mod visualizaconf;
 
 // Próprio módulos do projeto:
 use item_de_exclusao::{FilaExclusao, e_um_linux_wsl};
@@ -37,6 +38,12 @@ fn main() {
    if unsafe { ha_outra_instancia_em_execucacao()  } {
       print!("Já há uma instância deste programa em execução!\n");
       exit(99);
+   }
+
+   for item in args().skip(1)
+   {
+      if item == "--config"
+         { visualizaconf::pagina_configuracao(); return (); }
    }
 
    /* Nota: isso é uma parte temporária que foi posta apenas pra que alguns
