@@ -1,5 +1,5 @@
 """
-   Para monitoramento do programa, será preciso de algumas amostras. E é 
+   Para monitoramento do programa, será preciso de algumas amostras. E é
  exatamente isso que este script faz, ele cria simples amostras no diretório
  'Downloads', assim o programa pode excluí-los.
 
@@ -7,7 +7,7 @@
  principalmente a parte de 'debug', então cria randomicamente arquivos com
  tais extensões. Veja que, os arquivos não são realmente reais, apenas as
  suas extensões -- e futuramente o magic number também, assim você não conta
- apenas com a extensão de tal arquivo pra identficação -- tais arquivos 
+ apenas com a extensão de tal arquivo pra identficação -- tais arquivos
  preenchido com uma quantia randomica de bytes(zeros).
 """
 
@@ -17,12 +17,13 @@ from pathlib import (Path)
 from os import (getenv)
 from multiprocessing import (Process)
 
+CAMINHO_VALIDADES = Path("data/definicoes.json")
 
 def gera_uma_string_aleatoria(n: int) -> str:
    assert (n >= 10)
 
    grande_string_seletora = (
-      string.ascii_letters + string.ascii_lowercase + 
+      string.ascii_letters + string.ascii_lowercase +
       string.ascii_uppercase + string.digits + string.hexdigits +
       string.octdigits
    )
@@ -39,7 +40,7 @@ def cria_arquivo_branco(caminho: Path, extensao: str) -> Path:
    Cria um arquivo, dado o caminho, dada também a extensão. No fim, preenche
    ele com uma quantia, arbitrariamente escolhida, com bytes zerados.
    """
-   assert (caminho.exists())   
+   assert (caminho.exists())
    assert (extensao != "")
 
    nome_aleatorio = gera_uma_string_aleatoria(randint(15, 20))
@@ -57,11 +58,11 @@ def cria_arquivo_branco(caminho: Path, extensao: str) -> Path:
    return pathname
 
 def geracao_aleatoria_de_varias_extensoes_em_definicoes() -> None:
-      #destino = Path(getenv("HOME"), "Downloads") 
+      #destino = Path(getenv("HOME"), "Downloads")
       destino = caminho_de_destino()
 
-      with open("definicoes.json", "rt") as stream:
-         definicoes = json.load(stream) 
+      with open(CAMINHO_VALIDADES, "rt") as stream:
+         definicoes = json.load(stream)
 
          print("\nCriação dos arquivos com as devidas extensões ...\n")
          for extensao in definicoes.keys():
@@ -69,12 +70,12 @@ def geracao_aleatoria_de_varias_extensoes_em_definicoes() -> None:
          print("Finalizado.")
 
 def gerador_aleatorio_de_varias_extensoes_paralelo() -> None:
-   #destino = Path(getenv("HOME"), "Downloads") 
+   #destino = Path(getenv("HOME"), "Downloads")
    destino = caminho_de_destino()
    pool = []
 
-   with open("definicoes.json", "rt") as stream:
-      definicoes = json.load(stream) 
+   with open(CAMINHO_VALIDADES, "rt") as stream:
+      definicoes = json.load(stream)
 
       print("\nCriação dos arquivos com as devidas extensões ...\n")
 
@@ -93,7 +94,7 @@ def gerador_aleatorio_de_varias_extensoes_paralelo() -> None:
       print("Tudo foi executado conforme.")
 
 def caminho_de_destino() -> Path:
-   kernel_linux = platform.system().lower() == "linux" 
+   kernel_linux = platform.system().lower() == "linux"
    forque_wsl = "wsl2" in platform.release().lower()
 
    # Trata caso especial onde o Linux é na verdade um WSL. Neste caso acessa
@@ -102,10 +103,10 @@ def caminho_de_destino() -> Path:
       BASE = getenv("HOMEPATH")
       return Path(BASE, "Downloads")
    else:
-      return Path(getenv("HOME"), "Downloads") 
+      return Path(getenv("HOME"), "Downloads")
 
 # === === ===  === === === === === === === === === === === === === === === ==
-#	                  Testes Unitários 
+#	                  Testes Unitários
 # === === ===  === === === === === === === === === === === === === === === ==
 class CaminhoDeDestinoNoWLS(unittest.TestCase):
    def runTest(self):
@@ -122,7 +123,7 @@ class AmostrasDeStringsGeradasRandomicamente(unittest.TestCase):
 
 class CriacaoDeArquivoPraDeterminadaExtensao(unittest.TestCase):
    def runTest(self):
-      destino = Path(getenv("HOME"), "Downloads") 
+      destino = Path(getenv("HOME"), "Downloads")
       extensoes = ["mp4", "pdf", "dat"]
       outputs = []
 
@@ -150,10 +151,10 @@ class GeracaoAleatoriaDeVariasExtensoesEmDefinicoes(unittest.TestCase):
          print('\t', pathname,"...", "removido.")
 
    def runTest(self):
-      destino = Path(getenv("HOME"), "Downloads") 
+      destino = Path(getenv("HOME"), "Downloads")
 
-      with open("definicoes.json", "rt") as stream:
-         definicoes = json.load(stream) 
+      with open(CAMINHO_VALIDADES, "rt") as stream:
+         definicoes = json.load(stream)
 
          print("Criação por iteração das extensões e suas validades:\n")
          for extensao in definicoes.keys():
