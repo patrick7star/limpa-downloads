@@ -15,7 +15,6 @@ use std::cmp::{Eq, PartialEq};
 use std::env::{var};
 use std::mem::{zeroed};
 use std::ffi::{c_char};
-
 // Módulos destes projeto:
 use remocao_dir::{ self as RD, };
 use super::letreiro::Letreiro;
@@ -25,6 +24,8 @@ use validades::{
 };
 // Biblioteca externa:
 use utilitarios::legivel::{tamanho_legivel, tempo_legivel_duration};
+// Reexportando ...
+pub use validades::{NOME_CONFIG};
 
 
 /* Trait para re-implementação do Drop com "saída" na tela. Está versão é 

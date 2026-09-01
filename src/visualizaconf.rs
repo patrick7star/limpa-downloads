@@ -5,14 +5,19 @@
  extern crate serde_json;
  extern crate utilitarios;
 
- use pancurses::{Window, COLOR_PAIR, COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW,
-   A_BOLD, A_NORMAL};
- use utilitarios::legivel::{string_to_duration, tempo_legivel_duration};
- // Biblioteca padrão do Rust:
- use std::fs::{File};
- use std::io::{self, BufReader};
- use std::time::{Duration};
- use std::collections::{HashMap};
+use pancurses::{
+   Window, COLOR_PAIR, COLOR_WHITE, COLOR_BLACK, COLOR_YELLOW,
+   A_BOLD, A_NORMAL
+ };
+use utilitarios::legivel::{string_to_duration, tempo_legivel_duration};
+// Biblioteca padrão do Rust:
+use std::fs::{File};
+use std::io::{self, BufReader};
+use std::time::{Duration};
+use std::collections::{HashMap};
+// Importação do próprio projeto:
+use crate::item_de_exclusao::{NOME_CONFIG};
+use crate::links::{computa_caminho};
 
 pub fn pagina_configuracao() {
    let janela = pancurses::initscr();
@@ -52,7 +57,8 @@ fn obtem_lista_da_validade_das_extensoes()
 {
    type Dado = HashMap<String, [String; 2]>;
 
-   let arquivo = File::open("definicoes.json")?;
+   let pathname = computa_caminho(NOME_CONFIG);
+   let arquivo = File::open(pathname)?;
    let reader = BufReader::new(arquivo);
    let mut output: Vec<(String, Duration)> = vec![];
    let dados = serde_json::from_reader::<_, Dado>(reader);

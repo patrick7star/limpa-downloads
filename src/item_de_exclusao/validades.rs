@@ -15,7 +15,8 @@ use crate::links::{computa_caminho};
 type TipoJSON = Map<String, Value>;
 
 static mut TABELA_EXTENSOES: Option<TipoJSON> = None;
-const NOME_CONFIG: &str = "definicoes.json";
+// Localização do arquivo de 
+pub const NOME_CONFIG: &str = "data/definicoes.json";
 
 
 #[allow(static_mut_refs)]
