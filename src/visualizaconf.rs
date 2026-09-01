@@ -66,9 +66,9 @@ fn obtem_lista_da_validade_das_extensoes()
          let extensao = chave.to_string();
 
          if cfg!(debug_assertions)
-            { tempo = string_to_duration(&valor[0]).unwrap(); }
-         else
             { tempo = string_to_duration(&valor[1]).unwrap(); }
+         else
+            { tempo = string_to_duration(&valor[0]).unwrap(); }
 
          output.push((extensao, tempo));
       }
