@@ -418,7 +418,10 @@ fn diretorio_esta_vazio(caminho:&Path) -> bool {
 fn caminho_da_raiz() -> PathBuf {
    if e_um_linux_wsl() 
    {
-      let base = var("HOMEPATH").unwrap();      
+      let base = match var("HOMEPATH") {
+         Ok(result) => result,
+         Err(_) => "/mnt/c/users/savio".to_string()
+      };
       let caminho = Path::new(&base).join(&"Downloads");
 
       caminho.to_path_buf()

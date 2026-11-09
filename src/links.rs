@@ -32,37 +32,38 @@ pub fn computa_caminho<P: AsRef<Path>>(complemento: P) -> PathBuf
 
 pub fn linka_executaveis(nome_do_linque: &str) 
 {
-   const BASE: &str = env!("LINKS");
+   #[allow(non_snake_case)]
+   if let Ok(BASE) = var("LINKS") {
+      match cria_linques_no_repositorio(nome_do_linque) 
+      {
+         Ok(caminho) => { 
+            assert!(caminho.exists()); 
+            println!("Linque criado com sucesso em $LINKS."); 
+         } Err(classificacao_do_erro) => {
+            let linque = Path::new(&BASE).join(nome_do_linque);
+            // Encurtador do nome longo.
+            let tempo_do_symlink = tempo_existencia_symbolic_link;
 
-   match cria_linques_no_repositorio(nome_do_linque) 
-   {
-      Ok(caminho) => { 
-         assert!(caminho.exists()); 
-         println!("Linque criado com sucesso em $LINKS."); 
-      } Err(classificacao_do_erro) => {
-         let linque = Path::new(BASE).join(nome_do_linque);
-         // Encurtador do nome longo.
-         let tempo_do_symlink = tempo_existencia_symbolic_link;
+            match classificacao_do_erro.kind() 
+            {
+               io::ErrorKind::AlreadyExists => { 
+                  let msg_erro = "Já existe um linque em $LINKS";
 
-         match classificacao_do_erro.kind() 
-         {
-            io::ErrorKind::AlreadyExists => { 
-               let msg_erro = "Já existe um linque em $LINKS";
-
-               if let Ok(fmt) = tempo_do_symlink(&linque)
-                  { eprintln!("{} há ~ {}.", msg_erro, fmt); }
-            } io::ErrorKind::Unsupported => { 
-               eprintln!("Versão 'debug' não cria linque do repositório.");
-
-               if linque.exists() {
                   if let Ok(fmt) = tempo_do_symlink(&linque)
-                     { eprintln!("Existe um linque(release) há {}", fmt); }
+                     { eprintln!("{} há ~ {}.", msg_erro, fmt); }
+               } io::ErrorKind::Unsupported => { 
+                  eprintln!("Versão 'debug' não cria linque do repositório.");
+
+                  if linque.exists() {
+                     if let Ok(fmt) = tempo_do_symlink(&linque)
+                        { eprintln!("Existe um linque(release) há {}", fmt); }
+                  }
                }
+               _ =>
+                  { panic!("{}", classificacao_do_erro); }
             }
-            _ =>
-               { panic!("{}", classificacao_do_erro); }
-         }
-      } 
+         } 
+      }
    }
 }
 
