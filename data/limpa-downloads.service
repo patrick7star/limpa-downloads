@@ -1,0 +1,10 @@
+
+[Unit]
+Description=Faz uma faixina do diretório Downloads em ambos sistemas Windows e Linux.
+
+[Service]
+Type=oneshot
+ExecStart=/home/dee_dee_dexter/programas/limpa-downloads/target/debug/limpa_downloads
+
+[Install]
+WantedBy=default.target

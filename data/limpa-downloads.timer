@@ -1,0 +1,10 @@
+[Unit]
+Description=Executa função de limpeza no background a cada 3h.
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+Unit=limpa-downloads.service
+
+[Install]
+WantedBy=timers.target
